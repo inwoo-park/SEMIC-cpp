@@ -74,7 +74,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	this->SensibleHeatFlux();
 
 	/* 2. Calculate the latent heat flux */
-	this->LatentHeatFlux();
+	// this->LatentHeatFlux();
 } /* }}} */
 
 void SEMIC::Run(){ /* {{{ */
