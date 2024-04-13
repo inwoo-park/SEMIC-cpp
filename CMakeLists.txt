@@ -6,6 +6,7 @@ enable_testing()
 
 add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp src/SurfaceEnergyBalance.h)
 add_executable(SEMIC src/main.cpp)
+target_include_directories(SEMIC PUBLIC src)
 target_link_libraries(SEMIC SemicLib)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})

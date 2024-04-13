@@ -1,5 +1,5 @@
 // #include<iostream>
-#include"SurfaceMassBalance.h"
+#include "SurfaceEnergyBalance.h"
 
 int main(void){
 
