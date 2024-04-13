@@ -2,9 +2,15 @@ cmake_minimum_required(VERSION 3.0.0)
 project(SEMIC-cpp VERSION 0.1.0 LANGUAGES C CXX)
 
 # include(CTest)
-enable_testing()
+# enable_testing()
+set(CMAKE_CXX_STANDARD 11)
 
-add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp src/SurfaceEnergyBalance.h)
+# Initialize SEMIC library for main file
+add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
+ src/SurfaceEnergyBalance.h
+ src/SemicParameters.h)
+
+# Initialize SEMIC
 add_executable(SEMIC src/main.cpp)
 target_include_directories(SEMIC PUBLIC src)
 target_link_libraries(SEMIC SemicLib)
