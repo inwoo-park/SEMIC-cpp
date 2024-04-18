@@ -127,17 +127,33 @@ void SEMIC::DiurnalCycle(SemicParameters Param, DoubleVector &above, DoubleVecto
 	/* semic-f90: diurnal_cycle
 	*/
 	double amp = Param.amp; /* temperature amplitude*/
-	DoubleVector tmean = this->tsurf;
-
-	DoubleVector tmp1(this->nx, 0.0), tmp2(this->nx, 0.0);
-
+	double tmean; /* surface temperature */
+	double tmp1, tmp2; /* temporal variable */
+	
 	/* Check consistency*/
 	assert(above.size() == this->nx);
 	assert(below.size() == this->nx);
 	
 	for (int i=0; i<this->nx; i++){
-		if (abs(tmean[i]/amp) < 1.0){
-			
+		tmean = this->tsurf[i]; /* get surface temperature */
+
+		if (abs(tmean/amp) < 1.0){
+			tmp1 = acos(tmean/amp);
+			tmp2 = sqrt(1 - tmean);
+		}
+
+		if (tmean + amp < 0.0){
+			below[i] = tmean;
+			above[i] = 0.0;
+		}else{
+			above[i] = tmean;
+			below[i] = 0.0;
+			if (abs(tmean) < amp){
+				/* dt = 2. * x1 */
+				above[i] = (-tmean*tmp1 + amp*tmp2 + PI*tmean)/(PI - tmp1);
+				/* dt = x2 - x1 */
+				below[i] = (tmean*tmp1 - amp*tmp2)/tmp1;
+			}
 		}
 		
 	}
