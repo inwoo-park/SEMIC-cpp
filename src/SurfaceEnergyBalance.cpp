@@ -1,5 +1,6 @@
 #include "SurfaceEnergyBalance.h"
 #include "SemicParameters.h"
+#include "omp.h"
 
 SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
@@ -311,6 +312,10 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	
 	/* initialize auxilary variables */
 	DoubleVector qsb(nx,0);
+	assert(this->mask.size() == nx);
+	assert(this->t2m.size() == nx);
+	assert(this->shf.size() == nx);
+	assert(this->lhf.size() == nx);
 
 	if (this->verbose) cout << "   RunEnergyBalance\n";
 	
@@ -323,6 +328,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	fill(this->lhf.begin(), this->lhf.end(), 0.0);
 	this->LatentHeatFlux(this->Param, this->Const);
 
+	#pragma omp parallel for
 	for (i=0; i<nx; i++)
 		this->subl[i] = this->subl[i]/RHOW;
 
@@ -333,6 +339,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
 	if (this->verbose) cout << "   step4: calculate surface energy balance\n";
+	#pragma omp parallel for
 	for (i=0; i<nx; i++){
 		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
 	}
@@ -341,6 +348,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose) cout << "   step5: update surface temperature\n";
 	assert(this->qmr.size() == nx);
 	assert(this->tsurf.size() == nx);
+	#pragma omp parallel for
 	for (i = 0; i < nx; i++){
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
 		this->tsurf[i] = this->tsurf[i] + qsb[i]*this->Param->tsticsub / this->Param->ceff;
@@ -353,10 +361,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	/* 6. Update 2-m air temperature over ice sheet */
 	if (this->verbose) cout << "   step6: update 2-air temperature\n";
-	assert(this->mask.size() == nx);
-	assert(this->t2m.size() == nx);
-	assert(this->shf.size() == nx);
-	assert(this->lhf.size() == nx);
+	#pragma omp parallel for
 	for (i = 0; i < nx; i++){
 		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
@@ -374,17 +379,32 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	int nx = this->nx;
 	DoubleVector above(nx,0.0), below(nx,0.0);
 	DoubleVector qmelt(nx,0.0), qcold(nx,0.0);
+	DoubleVector snow_to_ice_input(nx);
+	DoubleVector refrozen_rain(nx);
+	DoubleVector refrozen_snow(nx);
+
+	assert(this->melt.size() == nx);
+	assert(this->melted_snow.size() == nx);
+	assert(this->melted_ice.size() == nx);
+	assert(this->hsnow.size() == nx);
+	assert(this->acc.size() == nx);
+	assert(this->smb_snow.size() == nx);
+	assert(this->sf.size() == nx);
+	assert(this->subl.size() == nx);
+	assert(this->smb.size() == nx);
+	assert(this->smb_snow.size() == nx);
+	assert(this->smb_ice.size() == nx);
 
 	if (this->verbose) cout << "   RunMassBalance\n";
 
-	/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
-	if (this->verbose) cout << "   step1: calculate above/below freezing temperature\n";
-	for (i=0; i<nx; i++)
+	#pragma omp parallel for
+	for (i=0; i<nx; i++){
+		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
+		if (this->verbose) cout << "   step1: calculate above/below freezing temperature\n";
 		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic, above[i], below[i]);
-	for (i = 0; i<nx; i++)
+
 		this->qmr[i] = 0.;
 	
-	for (i = 0; i<nx; i++){
 		if (this->mask[i] >= 1){
 			/* 2. Calculate melt energy where temperature exceeds freezing */	
 			qmelt[i] = max(0.0, above[i] * this->Param->ceff / this->Param->tstic);
@@ -395,15 +415,10 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			qmelt[i] = 0.;
 			qcold[i] = 0.;
 		}
-	} 
 
-	/* 4. Ablation: melt (water m s-1); potential melt resulting from available melt energy*/
-	if (this->verbose) cout << "   step4: calculate ablation.\n";
-	assert(this->melt.size() == nx);
-	assert(this->melted_snow.size() == nx);
-	assert(this->melted_ice.size() == nx);
-	assert(this->hsnow.size() == nx);
-	for (i = 0; i < nx; i++){
+		/* 4. Ablation: melt (water m s-1); potential melt resulting from available melt energy*/
+		if (this->verbose) cout << "   step4: calculate ablation.\n";
+
 		/* potential melt */
 		this->melt[i] = qmelt[i]/(RHOW * CLM);
 		/* seperate potential melt into actual melt of snow and ice */
@@ -411,9 +426,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		this->melted_snow[i] = min(this->melt[i], this->hsnow[i]/this->Param->tstic);
 		
 		this->melted_ice[i] = this->melt[i] - this->melted_snow[i];
-	}
 
-	for (i = 0; i < nx; i++){
 		if (this->mask[i] == 2){
 			/* actual melt is sum of melted snow and ice (melted snow over land) */
 			this->melt[i] = this->melted_snow[i] + this->melted_ice[i];
@@ -422,14 +435,11 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			this->melt[i] = this->melted_snow[i];
 			this->melted_ice[i] = 0;
 		}
-	}
 
-	/* 5. Refreezing (m s-1) as fraction of melt (increase with snow height) */
-	if (this->verbose) cout << "   step5: refreezing.\n";
-	double f_rz = this->Param->rcrit; /* get freezing parameter*/
-	DoubleVector refrozen_rain(nx);
-	DoubleVector refrozen_snow(nx);
-	for (i = 0; i < nx; i++){
+		/* 5. Refreezing (m s-1) as fraction of melt (increase with snow height) */
+		if (this->verbose) cout << "   step5: refreezing.\n";
+		double f_rz = this->Param->rcrit; /* get freezing parameter*/
+
 		this->refr[i] = qcold[i] / (RHOW * CLM);
 		/* potential refreezing */
 		refrozen_rain[i] = min(this->refr[i], this->rf[i]);
@@ -445,48 +455,31 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		   is subtracted from residual energy
 		*/
 		this->qmr[i] = this->qmr[i] - (1.0 - f_rz) * this->refr[i] * RHOW *CLM;
-	}
 
-	/* 6. Runoff */
-	if (this->verbose) cout << "   step6: runoff\n";
-	for (i = 0; i < nx; i++){
+		/* 6. Runoff */
+		if (this->verbose) cout << "   step6: runoff\n";
 		this->runoff[i] = this->melt[i] + this->rf[i] - refrozen_rain[i];
-	}
 
-	/* 7. Accumulation: sum of all incoming solid water (just diagnostic here) */
-	if (this->verbose) cout << "   step7: accumulation\n";
-	assert(this->acc.size() == nx);
-	for (i = 0; i < nx; i++){
+		/* 7. Accumulation: sum of all incoming solid water (just diagnostic here) */
+		if (this->verbose) cout << "   step7: accumulation\n";
 		this->acc[i] = this->sf[i] - this->subl[i] + this->refr[i];
-	}
 
-	/* 8. Surface mass balancee of snow */
-	if (this->verbose) cout << "   step8: surface mass balance of snow\n";
-	assert(this->smb_snow.size() == nx);
-	assert(this->sf.size() == nx);
-	assert(this->subl.size() == nx);
-	for (i = 0; i < nx; i++){
+		/* 8. Surface mass balancee of snow */
+		if (this->verbose) cout << "   step8: surface mass balance of snow\n";
 		this->smb_snow[i] = this->sf[i] - this->subl[i] - this->melted_snow[i] + refrozen_snow[i];
-	}
 
-	for (i=0; i<nx; i++){
-		if (this->mask[i] == 0)
+		if (this->mask[i] == 0){
 			this->hsnow[i] = 0.;
+		}
 		else{
 			/* 9. Update snow height*/
 			this->hsnow[i] = max(0.0, this->hsnow[i] + this->smb_snow[i] * this->Param->tstic);
 		}
-	}
 
-	/* 10. Relax snow height to maximum (e.g., 5m) */
-	if (this->verbose) cout << "   step10: relax snow height\n";
-	DoubleVector snow_to_ice_input(nx);
-	double snow_to_ice;
+		/* 10. Relax snow height to maximum (e.g., 5m) */
+		if (this->verbose) cout << "   step10: relax snow height\n";
+		double snow_to_ice;
 
-	assert(this->smb.size() == nx);
-	assert(this->smb_snow.size() == nx);
-	assert(this->smb_ice.size() == nx);
-	for (i = 0; i < nx; i++){
 		snow_to_ice = max(0.0, this->hsnow[i] - HSMAX);
 		/* save temporal data set.*/
 		snow_to_ice_input[i] = snow_to_ice;
@@ -497,11 +490,9 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		/* use to force ice sheet model */
 		/* update new ice budge remove or add ice */
 		this->hice[i] = this->hice[i] + this->smb_ice[i] * this->Param->tstic;
-	}
 
-	/* 11. Total surface mass balance */
-	if (this->verbose) cout << "   step11: total surface mass balance\n";
-	for (i = 0; i < nx; i++){
+		/* 11. Total surface mass balance */
+		if (this->verbose) cout << "   step11: total surface mass balance\n";
 		snow_to_ice = snow_to_ice_input[i];
 		if (this->mask[i] == 2){
 			this->smb[i] = this->smb_snow[i] + this->smb_ice[i] - snow_to_ice/this->Param->tstic;
@@ -509,16 +500,12 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		else{
 			this->smb[i] = this->smb_snow[i] + max(0.0, this->smb_ice[i] - snow_to_ice/this->Param->tstic);
 		}
-	}
 
-	/* 12. Update snow albedo*/
-	if (this->verbose) cout << "   step12: update snow albedo\n";
-	assert(this->alb_snow.size() == nx);
-	assert(this->alb.size() == nx);
-	double f_alb;
-	double albi=this->Param->albi;
-	double albl=this->Param->albl;
-	for (i = 0; i < nx; i++){
+		/* 12. Update snow albedo*/
+		if (this->verbose) cout << "   step12: update snow albedo\n";
+		double f_alb;
+		double albi=this->Param->albi;
+		double albl=this->Param->albl;
 		f_alb = 1 - exp(-this->hsnow[i]/(this->Param->hcrit + EPSILON));
 		if (this->alb_scheme == 0){
 			this->alb_snow[i] = this->Param->alb_smax;
@@ -555,10 +542,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			cerr << "ERROR: Given mask is not supported.";
 			break;
 		}
-	}
 
-	/* Store residual energy */
-	for (i = 0; i < nx; i++){
+		/* Store residual energy */
 		if (this->mask[i]==0) /* for ocean mask*/
 			this->qmr_res[i] = 0.0;
 		else
