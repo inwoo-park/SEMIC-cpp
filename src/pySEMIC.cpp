@@ -65,6 +65,7 @@ PYBIND11_MODULE(pySEMIC, m){
 		.def_readwrite("alb_snow",&SEMIC::alb_snow)
 		.def_readwrite("smb",&SEMIC::smb)
 		.def_readwrite("acc",&SEMIC::acc)
+		.def_readwrite("melt",&SEMIC::melt)
 		.def_readwrite("lwup",&SEMIC::lwup)
 		.def_readwrite("verbose",&SEMIC::verbose)
 		.def("Initialize",&SEMIC::Initialize)
