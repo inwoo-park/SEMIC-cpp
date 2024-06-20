@@ -5,20 +5,24 @@
 #include<vector>
 #include<cmath>
 #include<cassert>
+#include<limits>
 #include"SemicParameters.h"
 
 /* Initialize global constant value */
 const double PI=3.141592653589793238462643;
-const double T0=237.15;
-const double SIGMA=5.67e-8; /* Stefan-Bolzmann conant */
-const double EPSIL=0.62197; /* ratio of the molar weight of water vapor to the molar weight of dry air */
+const double T0=273.15;
+const double SIGMA=5.67e-8;  /* Stefan-Bolzmann conant */
+const double EPSIL=0.62197;  /* ratio of the molar weight of water vapor to the molar weight of dry air */
 
 const double CLS 	= 2.83e+6; /* latent heat of sublimation (J kg-1) */
 const double CLM 	= 3.3e+5; 	/* latent heat of melting (J kg-1)*/
 const double CLV 	= 2.5e+6; 	/* latent heat of condensation (J kg-1) */
-const double CAP 	= 1000.;  	/* specific heat capacity of air (J kg-1 K-1) */
+const double CAP  	= 1000.;  	/* specific heat capacity of air (J kg-1 K-1) */
 const double RHOW 	= 1000.;  	/* density of water (kg m-3) */
 const double HSMAX 	= 5; 		/* maximum snow height (m) */
+
+const double EPSILON = numeric_limits<double>::epsilon(); /* epsilon */
+//const double EPSILON = 1e-16; /* epsilon */
 
 using namespace std;
 
@@ -86,13 +90,14 @@ class SEMIC{ /* {{{ */
 		void		InitializeParameters(void);
 		void		Display();
 		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
+		//void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
+		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const);
 		double 	SaturateWaterVaporP(double temperature);
 		
-		void    LongwaveRadiationUp();
-		void    TestReturnVector(vector<double> &tmp);
+		void		LongwaveRadiationUp();
+		void		TestReturnVector(vector<double> &tmp);
 
-		void DiurnalCycle(DoubleVector &tmean_input, DoubleVector &above, DoubleVector &below);
+		void		DiurnalCycle(double tmean, double &above, double &below);
 
 		/* Albedo schemes */
 		double Albedo_Slater(double tsurf, double tmin, double tmax, double alb_smax, double alb_smin);

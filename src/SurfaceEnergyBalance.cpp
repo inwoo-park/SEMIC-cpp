@@ -97,19 +97,12 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
-	// csh=Param.csh;
-	// cap=Param.cap;
-
-	DoubleVector shf(this->nx, 0);
 
 	for (int i=0; i < this->nx; i++)
-		shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
-
-	/* Update shf results */
-	this->shf = shf;
+		this->shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
 } /* }}} */
 
-void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf){ /* {{{ */
+void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*/
 	/* semic-f90: latent_heat_flux
 	Inputs
 	----------
@@ -122,43 +115,57 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, Double
 	subl    - sublimation
 	lhf     - latent heat flux
 	*/
-	int nx = this->nx;
-	vector<double> shumidity_sat(nx,0); /* Specific humidity */
-	vector<double> sat_vaporP(nx,0); /* Saturated water vapor pressure*/
+	int i, nx = this->nx;
+	DoubleVector shumidity_sat(nx,0); /* Specific humidity */
+	DoubleVector sat_vaporP(nx,0);    /* Saturated water vapor pressure*/
 
 	double clh=Param->clh;
-	double clv=Const->clv;
 	double cls=Const->cls;
+	double clv=Const->clv;
 	
 	/* Check input data size */
-	assert(sp.size() == nx);
-	assert(evap.size() == nx);
-	assert(subl.size() == nx);
-	assert(lhf.size() == nx);
+	assert(this->wind.size() == nx);
+	assert(this->rhoa.size() == nx);
+	assert(this->sp.size() == nx);
+	assert(this->evap.size() == nx);
+	assert(this->subl.size() == nx);
+	assert(this->lhf.size() == nx);
 
 	if (this->verbose) cout << "calculate latent heat flux\n";
 
-	for (int i=0; i < nx; i++){
+	for (i=0; i < nx; i++){
 		if (this->tsurf[i] < T0){
-			sat_vaporP[i] = this->SaturateWaterVaporP(this->tsurf[i]);
-
-			/* Calculate specific humidity*/
-			shumidity_sat[i] = sat_vaporP[i]*EPSIL/(sat_vaporP[i]*(EPSIL-1.0)+ sp[i]);
+			sat_vaporP[i] = this->ei_sat(this->tsurf[i]);
+			/* specific humidity at surface (assumed to be saturated) is */
+			shumidity_sat[i] = sat_vaporP[i] * EPSIL /(sat_vaporP[i]*(EPSIL-1.0)+ this->sp[i]);
 			
-			subl[i] = clh*this->wind[i]*(shumidity_sat[i] - this->qq[i]);
+			this->subl[i] = clh*this->wind[i]*this->rhoa[i]*(shumidity_sat[i] - this->qq[i]);
 
-			lhf[i] = subl[i]*cls;
+			this->lhf[i] = this->subl[i]*cls;
 		}
 		else{
-			sat_vaporP[i] = this->SaturateWaterVaporP(this->tsurf[i]);
+			sat_vaporP[i] = this->ew_sat(this->tsurf[i]);
 			/* Evaporation, condenstation */
 			/* Specific humidity at surface (assumed to be saturated) */
-			shumidity_sat[i] = sat_vaporP[i] * EPSIL /(sat_vaporP[i]*(EPSIL) + sp[i]);
-			evap[i] = clh*this->wind[i]*this->rhoa[i]*(shumidity_sat[i] - qq[i]);
-			lhf[i] = evap[i]*clv;
+			shumidity_sat[i] = sat_vaporP[i] * EPSIL /(sat_vaporP[i]*(EPSIL-1.0) + this->sp[i]);
+			this->evap[i] = clh*this->wind[i]*this->rhoa[i]*(shumidity_sat[i] - qq[i]);
+			this->lhf[i] = this->evap[i]*clv;
 		}
 	}
-} /* }}} */
+} /*}}}*/
+
+void SEMIC::LongwaveRadiationUp(){ /*{{{*/
+	/* Calculate upward long-wave radiation with Stefan-Boltzman law
+
+		lwup = sigma * T^4
+	*/
+	int nx=this->nx;
+	
+	if (this->verbose) cout << "calculate upward long-wave radiation.\n";
+
+	for (int i=0; i < nx; i++)
+		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4.0);
+} /*}}}*/
 
 double SEMIC::SaturateWaterVaporP(double temperature) { /* {{{ */
 	/* Saturation water vapor pressure over ice 
@@ -174,59 +181,36 @@ double SEMIC::SaturateWaterVaporP(double temperature) { /* {{{ */
 	return fsat;
 } /* }}} */
 
-void SEMIC::LongwaveRadiationUp(){ /*{{{*/
-	/* Calculate upward long-wave radiation with Stefan-Boltzman law
-
-		lwup = sigma * T^4
-	*/
-	int nx=this->nx;
-	
-	if (this->verbose) cout << "calculate upward long-wave radiation.\n";
-
-	for (int i=0; i < nx; i++)
-		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4);
-} /*}}}*/
-
 void SEMIC::TestReturnVector(vector<double> &tmp){ /*{{{*/
 	for (int i=0; i<tmp.size(); i++){
 		tmp[i] = (double)i;
 	}
 }/*}}}*/
 
-void SEMIC::DiurnalCycle(DoubleVector &tmean_input, DoubleVector &above, DoubleVector &below){ /*{{{*/
+void SEMIC::DiurnalCycle(double tmean, double &above, double &below){ /*{{{*/
 	/* semic-f90: diurnal_cycle
 	*/
 	double amp = this->Param->amp; /* temperature amplitude*/
-	double tmean;
 	double tmp1, tmp2; /* temporal variable */
 	
 	/* Check consistency*/
-	assert(tmean_input.size() == this->nx);
-	assert(above.size() == this->nx);
-	assert(below.size() == this->nx);
-	
-	for (int i=0; i<this->nx; i++){
-		tmean = tmean_input[i]; /* get surface temperature */
+	if (abs(tmean/amp) < 1.0){
+		tmp1 = acos(tmean/amp);
+		tmp2 = sqrt(1 - pow(tmean,2.0)/pow(amp,2.0));
+	}
 
-		if (abs(tmean/amp) < 1.0){
-			tmp1 = acos(tmean/amp);
-			tmp2 = sqrt(1 - tmean);
+	if (tmean + amp < 0.0){
+		below = tmean;
+		above = 0.0;
+	}else{
+		above = tmean;
+		below = 0.0;
+		if (abs(tmean) < amp){
+			/* dt = 2. * x1 */
+			above = (-tmean*tmp1 + amp*tmp2 + PI*tmean)/(PI - tmp1);
+			/* dt = x2 - x1 */
+			below = (tmean*tmp1 - amp*tmp2)/tmp1;
 		}
-
-		if (tmean + amp < 0.0){
-			below[i] = tmean;
-			above[i] = 0.0;
-		}else{
-			above[i] = tmean;
-			below[i] = 0.0;
-			if (abs(tmean) < amp){
-				/* dt = 2. * x1 */
-				above[i] = (-tmean*tmp1 + amp*tmp2 + PI*tmean)/(PI - tmp1);
-				/* dt = x2 - x1 */
-				below[i] = (tmean*tmp1 - amp*tmp2)/tmp1;
-			}
-		}
-		
 	}
 } /*}}}*/
 
@@ -325,7 +309,6 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	int i;
 	int nx = this->nx; /* size of element*/
 	
-	// / SemicParameters Param=this->Param;
 	/* initialize auxilary variables */
 	DoubleVector qsb(nx,0);
 
@@ -338,21 +321,20 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	fill(this->subl.begin(), this->subl.end(), 0.0);
 	fill(this->evap.begin(), this->evap.end(), 0.0);
 	fill(this->lhf.begin(), this->lhf.end(), 0.0);
-	this->LatentHeatFlux(this->Param, this->Const, this->sp, this->wind, this->evap, this->subl, this->lhf);
+	this->LatentHeatFlux(this->Param, this->Const);
+
+	for (i=0; i<nx; i++)
+		this->subl[i] = this->subl[i]/RHOW;
 
 	/* 3. Surface physics: long-wave radiation */
+	assert(this->lwup.size() == nx);
+	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	this->LongwaveRadiationUp();
 
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
 	if (this->verbose) cout << "   step4: calculate surface energy balance\n";
-	assert(this->lwup.size() == nx);
-	assert(this->swd.size() == nx);
-	assert(this->alb.size() == nx);
-	assert(this->shf.size() == nx);
-	assert(this->lhf.size() == nx);
 	for (i=0; i<nx; i++){
-		qsb[i] = (1-this->alb[i])*this->swd[i] - this->lwup[i] - \
-			- this->shf[i] - this->lhf[i];
+		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
 	}
 
 	/* 5. Update surface temperature acoording to surface energy balancec */
@@ -361,7 +343,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	assert(this->tsurf.size() == nx);
 	for (i = 0; i < nx; i++){
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
-		if ((this->mask[i] == 2) || (this->mask[i] == 0)){
+		this->tsurf[i] = this->tsurf[i] + qsb[i]*this->Param->tsticsub / this->Param->ceff;
+		/* store residual energy for subfreezing tsurf over ice and thick snow cover in qmr for later use in mass balance */
+		if (((this->mask[i] == 2) || (this->hsnow[i] > 0.0)) && (this->tsurf[i] > T0)){
 			this->qmr[i] = (this->tsurf[i]-T0) * this->Param->ceff / this->Param->tsticsub;
 			this->tsurf[i] = T0;
 		}
@@ -374,7 +358,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	assert(this->shf.size() == nx);
 	assert(this->lhf.size() == nx);
 	for (i = 0; i < nx; i++){
-		if ((this->mask[i] == 2) || (this->mask[i] > 0)){
+		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
 		}
 	}
@@ -395,7 +379,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 	/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
 	if (this->verbose) cout << "   step1: calculate above/below freezing temperature\n";
-	this->DiurnalCycle(this->tsurf, above, below);
+	for (i=0; i<nx; i++)
+		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic, above[i], below[i]);
 	for (i = 0; i<nx; i++)
 		this->qmr[i] = 0.;
 	
@@ -422,13 +407,13 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		/* potential melt */
 		this->melt[i] = qmelt[i]/(RHOW * CLM);
 		/* seperate potential melt into actual melt of snow and ice */
-	}
 
-	for (i = 0; i < nx; i++){
 		this->melted_snow[i] = min(this->melt[i], this->hsnow[i]/this->Param->tstic);
 		
 		this->melted_ice[i] = this->melt[i] - this->melted_snow[i];
+	}
 
+	for (i = 0; i < nx; i++){
 		if (this->mask[i] == 2){
 			/* actual melt is sum of melted snow and ice (melted snow over land) */
 			this->melt[i] = this->melted_snow[i] + this->melted_ice[i];
@@ -451,11 +436,14 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		/* potential refreezing snow */
 		refrozen_snow[i] = min(this->refr[i] - refrozen_rain[i], 0.);
 		/* actual refreezing snow*/
+		refrozen_snow[i] = min(refrozen_snow[i], this->melted_snow[i]);
+		/* actual refreezing */
 		refrozen_rain[i] = f_rz * min(this->hsnow[i]/this->Param->tstic, refrozen_rain[i]);
 		refrozen_snow[i] = f_rz * min(this->hsnow[i]/this->Param->tstic, refrozen_snow[i]);
-
 		this->refr[i] = refrozen_rain[i] + refrozen_snow[i];
-
+		/* energy released during refreezing that has not been used
+		   is subtracted from residual energy
+		*/
 		this->qmr[i] = this->qmr[i] - (1.0 - f_rz) * this->refr[i] * RHOW *CLM;
 	}
 
@@ -473,14 +461,15 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	}
 
 	/* 8. Surface mass balancee of snow */
-	if (this->verbose) cout << "   step7: accumulation\n";
+	if (this->verbose) cout << "   step8: surface mass balance of snow\n";
 	assert(this->smb_snow.size() == nx);
 	assert(this->sf.size() == nx);
 	assert(this->subl.size() == nx);
 	for (i = 0; i < nx; i++){
-		this->smb_snow[i] = this->sf[i] - this->subl[i] - this->melted_snow[i] + \
-		refrozen_snow[i];
+		this->smb_snow[i] = this->sf[i] - this->subl[i] - this->melted_snow[i] + refrozen_snow[i];
+	}
 
+	for (i=0; i<nx; i++){
 		if (this->mask[i] == 0)
 			this->hsnow[i] = 0.;
 		else{
@@ -530,19 +519,21 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	double albi=this->Param->albi;
 	double albl=this->Param->albl;
 	for (i = 0; i < nx; i++){
-		f_alb = 1 - exp(this->hsnow[i]/(this->Param->hcrit + EPSIL));
+		f_alb = 1 - exp(-this->hsnow[i]/(this->Param->hcrit + EPSILON));
 		if (this->alb_scheme == 0){
 			this->alb_snow[i] = this->Param->alb_smax;
 		}
 		else if (this->alb_scheme == 1){
-			/* Slater's albedo scheme*/
+			/* Slater's albedo scheme */
 			this->alb_snow[i] = this->Albedo_Slater(this->tsurf[i], this->Param->tmin,
 			this->Param->tmax, this->Param->alb_smax, this->Param->alb_smin);
 		}
 		else if (this->alb_scheme == 2){
+			/* Denby albedo scheme */
 			this->alb_snow[i] = this->Albedo_Denby(this->melt[i], this->Param->alb_smax, this->Param->alb_smin, this->Param->mcrit);
 		}
 		else if (this->alb_scheme == 3){
+			/* ISBA albedo scheme */
 			this->alb_snow[i] = this->Albedo_ISBA(this->alb_snow[i], this->sf[i], this->melt[i], this->Param->tstic, this->Param->tstic, this->Param->tau_f, this->Param->tau_f, this->Param->w_crit, this->Param->mcrit, this->Param->alb_smax, this->Param->alb_smax);
 		}
 		else{
@@ -555,7 +546,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			this->alb[i] = albi + f_alb*(this->alb_snow[i] - albi);
 			break;
 		case 1: /* for land */
-			this->alb[i] = albi + f_alb*(this->alb_snow[i] - albl);
+			this->alb[i] = albl + f_alb*(this->alb_snow[i] - albl);
 			break;
 		case 0: /* for ocean */
 			this->alb[i] = 0.06;
@@ -564,19 +555,14 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			cerr << "ERROR: Given mask is not supported.";
 			break;
 		}
+	}
 
-		/* Store residual energy */
-		for (i = 0; i < nx; i++){
-			switch (this->mask[i])
-			{
-			case 0: /* for ocean mask */
-				this->qmr_res[i] = 0.0;
-				break;
-			default:
-				this->qmr_res[i] = this->qmr[i];
-				break;
-			}
-		}
+	/* Store residual energy */
+	for (i = 0; i < nx; i++){
+		if (this->mask[i]==0) /* for ocean mask*/
+			this->qmr_res[i] = 0.0;
+		else
+			this->qmr_res[i] = this->qmr[i];
 	}
 
 	/* Clear memory */

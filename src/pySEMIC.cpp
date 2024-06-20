@@ -57,6 +57,7 @@ PYBIND11_MODULE(pySEMIC, m){
 		.def_readwrite("t2m",&SEMIC::t2m)
 		/* model information */
 		.def_readwrite("mask",&SEMIC::mask)
+		.def_readwrite("alb_scheme",&SEMIC::alb_scheme)
 		/* model results */
 		.def_readwrite("tsurf",&SEMIC::tsurf)
 		.def_readwrite("hsnow",&SEMIC::hsnow)
@@ -64,9 +65,14 @@ PYBIND11_MODULE(pySEMIC, m){
 		.def_readwrite("alb",&SEMIC::alb)
 		.def_readwrite("alb_snow",&SEMIC::alb_snow)
 		.def_readwrite("smb",&SEMIC::smb)
+		.def_readwrite("smb_snow",&SEMIC::smb_snow)
 		.def_readwrite("acc",&SEMIC::acc)
 		.def_readwrite("melt",&SEMIC::melt)
 		.def_readwrite("lwup",&SEMIC::lwup)
+		.def_readwrite("shf",&SEMIC::shf)
+		.def_readwrite("lhf",&SEMIC::lhf)
+		.def_readwrite("qmr",&SEMIC::qmr)
+		.def_readwrite("qmr_res",&SEMIC::qmr_res)
 		.def_readwrite("verbose",&SEMIC::verbose)
 		.def("Initialize",&SEMIC::Initialize)
 		.def("Display",&SEMIC::Display)

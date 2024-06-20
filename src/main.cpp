@@ -1,6 +1,10 @@
 // #include<iostream>
 #include "SurfaceEnergyBalance.h"
 
+void testFunction(double &k){
+	k = -1000.0;
+}
+
 int main(void){
 
 	/* Initialize SEMIC module */
@@ -40,6 +44,10 @@ int main(void){
 	cout << semic->Param->alb_smax << endl;
 	
 	delete semic;
+
+	testFunction(tsurf[0]);
+	for (int i=0;i<nx; i++)
+		cout << tsurf[i] << endl;
 
 	return 0;
 }
