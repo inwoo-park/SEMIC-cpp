@@ -1,14 +1,18 @@
 #include "SurfaceEnergyBalance.h"
 #include "SemicParameters.h"
 
-SEMIC::SEMIC(void){
+SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
-}
+
+	this->verbose = true;
+} /*}}}*/
 SEMIC::~SEMIC(void){
 	delete this->Param;
 	delete this->Const;
+
+	this->InitializeParameters();
 }
 
 void SEMIC::Initialize(int nx){ /* {{{ */
@@ -31,10 +35,29 @@ void SEMIC::Initialize(int nx){ /* {{{ */
 		this->qq   = zeros;
 
 		this->lwup = zeros;
-
 		// this->Param = new SemicParameters();
 		// this->Const = new SemicConstants();
 } /* }}} */
+
+void SEMIC::InitializeParameters(void){ /*{{{*/
+	/* Initialize parameters */
+	this->n_ksub = 3;
+	this->Param->ceff = 2e+6;
+	this->Param->tstic = 86400.;
+
+	this->Param->albi = 0.07;
+	this->Param->albl = 0.15;
+	this->Param->tmin = -999;
+	this->Param->tmax = 273.15;
+	this->Param->hcrit = 0.028;
+	this->Param->rcrit = 0.79;
+	this->Param->amp = 3.5;
+	this->alb_scheme = 0;
+	this->Param->tau_a = 0.008;
+	this->Param->tau_f = 0.24;
+	this->Param->w_crit = 0.15;
+	this->Param->mcrit = 6e-8;
+} /*}}}*/
 
 void SEMIC::Display(){ /* {{{ */
 	cout << this->nx << "\n";
@@ -47,6 +70,8 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	/* semic-f90: sensible_heat_flux
 
 	*/
+	if (this->verbose) cout << "calculate sensible heat flux\n";
+
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
 	// csh=Param.csh;
@@ -57,7 +82,7 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	for (int i=0; i < this->nx; i++)
 		shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
 
-	// Update shf results
+	/* Update shf results */
 	this->shf = shf;
 } /* }}} */
 
@@ -87,6 +112,8 @@ void SEMIC::LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVe
 	assert(evap.size() == nx);
 	assert(subl.size() == nx);
 	assert(lhf.size() == nx);
+
+	if (this->verbose) cout << "calculate latent heat flux\n";
 
 	for (int i=0; i < nx; i++){
 		if (this->tsurf[i] < T0){
@@ -131,7 +158,7 @@ void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 	*/
 	int nx=this->nx;
 	
-	cout << "calulate upward long-wave radiation.\n";
+	if (this->verbose) cout << "calulate upward long-wave radiation.\n";
 
 	for (int i=0; i < nx; i++)
 		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4);
@@ -278,6 +305,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	// / SemicParameters Param=this->Param;
 	/* initialize auxilary variables */
 	DoubleVector qsb(nx,0);
+
+	if (this->verbose) cout << "RunEnergyBalance\n";
 	
 	/* 1. Calculate the sensible heat flux */
 	this->SensibleHeatFlux(this->Param, this->Const);
@@ -286,7 +315,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	fill(this->subl.begin(), this->subl.end(), 0.0);
 	fill(this->subl.begin(), this->subl.end(), 0.0);
 	fill(this->subl.begin(), this->subl.end(), 0.0);
-	// this->LatentHeatFlux();
+	this->LatentHeatFlux();
 
 	/* 3. Surface physics: long-wave radiation */
 	this->LongwaveRadiationUp();
@@ -322,6 +351,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	int nx = this->nx;
 	DoubleVector above(nx), below(nx);
 	DoubleVector qmelt(nx), qcold(nx);
+
+	if (this->verbose) cout << "RunMassBalance\n";
 
 	/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
 	this->DiurnalCycle(this->tsurf, above, below);
@@ -499,6 +530,9 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	/* Run 
 	*/
 	int i, nx=this->nx;
+
+	/* sub time stepping */
+	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
 	/* Run energy balance */
 	for (i=0; i < nx; this->n_ksub){

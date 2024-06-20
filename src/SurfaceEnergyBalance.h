@@ -34,7 +34,7 @@ class SEMIC{ /* {{{ */
 		int nx;     /* number of grid points */		
 		int n_ksub; /* number of sub-daily time steps */
 
-		SemicParameters *Param;
+		SemicParameters	*Param;
 		SemicConstants 	*Const;
 
 		DoubleVector t2m;    /* 2-m air temperature [unit: K] */
@@ -68,22 +68,25 @@ class SEMIC{ /* {{{ */
 		DoubleVector wind;   /* Surface wind speed [m s-1] */
 		DoubleVector rhoa;   /* Air density [kg m-3] */
 		DoubleVector qq;     /* air specific humidity [kg kg-1] */
-		IntVector mask;      /* */
+		IntVector mask;      /* masking surface informatin (0: ocean, 1: land, 2: ice)*/
 
 		/* auxilary variables */
 		DoubleVector lwup; /* upward longwave radiation [W m-2] */
 		DoubleVector subl;
 		DoubleVector evap;
 
+		bool verbose; /* show process */
+
 		/* }}} */
 
 		SEMIC(void);
 	    ~SEMIC(void);
 
-		void 	Initialize(int nx);
-		void 	Display();
-		void 	SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		void 	LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
+		void		Initialize(int nx);
+		void		InitializeParameters(void);
+		void		Display();
+		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
+		void		LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
 		double 	SaturateWaterVaporP(double temperature);
 		
 		void    LongwaveRadiationUp();
@@ -101,8 +104,8 @@ class SEMIC{ /* {{{ */
 
 		/* Go Solve!*/
 		void  	RunEnergyBalance();
-		void 	RunMassBalance();
-		void 	RunEnergyAndMassBalance();
+		void		RunMassBalance();
+		void		RunEnergyAndMassBalance();
 }; /* }}} */
 
 #endif

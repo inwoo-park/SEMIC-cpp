@@ -1,6 +1,9 @@
 #ifndef SEMICPARAMETERS_H
 #define SEMICPARAMETERS_H
 
+#include "iostream"
+using namespace std;
+
 class SemicParameters{ /* {{{ */
 	public:
 		double ceff; /* Surface specific heat capacity of snow/ice [J K-1 m-2] */
@@ -42,5 +45,13 @@ public:
 	double rhow=1e+3; 	/* density of water [kg m-3]*/
 	double hsmax=5; 	/* maximum snow height [m] */
 	// double epsil
+	
+	void Display(void){
+		cout << "cls    " << this->cls  << " latent heat of sublimation (unit: J kg-)" << endl;
+		cout << "clm    " << this->clm  << " latent heat of melting (unit: J kg-)" << endl;
+		cout << "clv    " << this->clv  << " latent heat of condensation (unit: J kg-)" << endl;
+		cout << "cap    " << this->cap  << " specific heat capacity of air (unit: J kg-1 K-1)" << endl;
+		cout << "rhow   " << this->rhow << " density of water (unit: kg m-3)" << endl;
+	};
 }; /* }}}*/
 #endif
