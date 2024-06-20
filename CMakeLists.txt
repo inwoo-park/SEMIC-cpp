@@ -6,8 +6,10 @@ project(SEMIC-cpp VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(PYSEMIC pySEMIC)
 
-add_subdirectory(pybind11)
-# find_package(pybind11 REQUIRED)
+#add_subdirectory(pybind11)
+find_package(Python3 REQUIRED Interpreter Development)
+#find_package(PythonInterp REQUIRED 3.9)
+find_package(pybind11 REQUIRED)
 pybind11_add_module(${PYSEMIC} src/pySEMIC.cpp src/SurfaceEnergyBalance.cpp)
 
 # pybind11_add_module(MyLib src/pybind.cpp)
@@ -26,3 +28,9 @@ target_link_libraries(SEMIC SemicLib)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 # include_directories(src)
+
+# Install
+# install binary file
+install(TARGETS SEMIC  DESTINATION bin)
+# install library file
+install(TARGETS ${PYSEMIC} DESTINATION lib)
