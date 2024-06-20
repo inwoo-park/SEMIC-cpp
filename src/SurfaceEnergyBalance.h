@@ -86,7 +86,7 @@ class SEMIC{ /* {{{ */
 		void		InitializeParameters(void);
 		void		Display();
 		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		void		LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
+		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
 		double 	SaturateWaterVaporP(double temperature);
 		
 		void    LongwaveRadiationUp();

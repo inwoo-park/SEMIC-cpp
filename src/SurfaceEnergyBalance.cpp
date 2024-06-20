@@ -86,7 +86,7 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	this->shf = shf;
 } /* }}} */
 
-void SEMIC::LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf){ /* {{{ */
+void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf){ /* {{{ */
 	/* semic-f90: latent_heat_flux
 	Inputs
 	----------
@@ -103,9 +103,9 @@ void SEMIC::LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVe
 	vector<double> shumidity_sat(nx,0); /* Specific humidity */
 	vector<double> sat_vaporP(nx,0); /* Saturated water vapor pressure*/
 
-	double clh=Param.clh;
-	double clv=Const.clv;
-	double cls=Const.cls;
+	double clh=Param->clh;
+	double clv=Const->clv;
+	double cls=Const->cls;
 	
 	/* Check input data size */
 	assert(sp.size() == nx);
@@ -313,9 +313,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	/* 2. Calculate the latent heat flux */
 	fill(this->subl.begin(), this->subl.end(), 0.0);
-	fill(this->subl.begin(), this->subl.end(), 0.0);
-	fill(this->subl.begin(), this->subl.end(), 0.0);
-	this->LatentHeatFlux();
+	fill(this->evap.begin(), this->evap.end(), 0.0);
+	fill(this->lhf.begin(), this->lhf.end(), 0.0);
+	this->LatentHeatFlux(this->Param, this->Const, this->sp, this->wind, this->evap, this->subl, this->lhf);
 
 	/* 3. Surface physics: long-wave radiation */
 	this->LongwaveRadiationUp();
