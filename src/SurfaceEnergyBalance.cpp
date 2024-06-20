@@ -61,8 +61,7 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	this->shf = shf;
 } /* }}} */
 
-void SEMIC::LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf)
-{ /* {{{ */
+void SEMIC::LatentHeatFlux(SemicParameters Param, SemicConstants Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf){ /* {{{ */
 	/* semic-f90: latent_heat_flux
 	Inputs
 	----------
@@ -125,7 +124,7 @@ double SEMIC::SaturateWaterVaporP(double temperature) { /* {{{ */
 	return fsat;
 } /* }}} */
 
-void SEMIC::LongwaveRadiationUp(){
+void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 	/* Calculate upward long-wave radiation with Stefan-Boltzman law
 
 		lwup = sigma * T^4
@@ -136,15 +135,15 @@ void SEMIC::LongwaveRadiationUp(){
 
 	for (int i=0; i < nx; i++)
 		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4);
-}
+} /*}}}*/
 
-void SEMIC::TestReturnVector(vector<double> &tmp){
+void SEMIC::TestReturnVector(vector<double> &tmp){ /*{{{*/
 	for (int i=0; i<tmp.size(); i++){
 		tmp[i] = (double)i;
 	}
-}
+}/*}}}*/
 
-void SEMIC::DiurnalCycle(DoubleVector &tmean_input, DoubleVector &above, DoubleVector &below){
+void SEMIC::DiurnalCycle(DoubleVector &tmean_input, DoubleVector &above, DoubleVector &below){ /*{{{*/
 	/* semic-f90: diurnal_cycle
 	*/
 	double amp = this->Param->amp; /* temperature amplitude*/
@@ -179,10 +178,10 @@ void SEMIC::DiurnalCycle(DoubleVector &tmean_input, DoubleVector &above, DoubleV
 		}
 		
 	}
-}
+} /*}}}*/
 
 /* Should implent Slater Albedo scheme */
-double SEMIC::Albedo_Slater(double tsurf, double tmin, double tmax, double alb_smax, double alb_smin){
+double SEMIC::Albedo_Slater(double tsurf, double tmin, double tmax, double alb_smax, double alb_smin){/*{{{*/
 	/* Calculate the albedo with Slater's method
 
 	alb_smax - maximum snow albedo (unit: none)
@@ -213,8 +212,8 @@ double SEMIC::Albedo_Slater(double tsurf, double tmin, double tmax, double alb_s
 	*/
 	alb = alb_smax - (alb_smax - alb_smin)*pow(tm,3.0);
 	return alb;
-}
-double SEMIC::Albedo_Denby(double melt, double alb_smax, double alb_smin, double mcrit) {
+}/*}}}*/
+double SEMIC::Albedo_Denby(double melt, double alb_smax, double alb_smin, double mcrit) {/*{{{*/
 	/* Calculate Albedo with Denby model 
 
 	Reference
@@ -223,8 +222,8 @@ double SEMIC::Albedo_Denby(double melt, double alb_smax, double alb_smin, double
 	double alb;
 	alb = alb_smin + (alb_smax - alb_smin) * exp(-melt/mcrit);
 	return alb;
-}
-double SEMIC::Albedo_ISBA(double alb, double sf, double melt, double tstic, double tau, double tau_a, double tau_f, double w_crit, double mcrit, double alb_smin, double alb_smax){
+}/*}}}*/
+double SEMIC::Albedo_ISBA(double alb, double sf, double melt, double tstic, double tau, double tau_a, double tau_f, double w_crit, double mcrit, double alb_smin, double alb_smax){/*{{{*/
 	/* Calcaulate snow albedo with ISBA method
 	
 	alb - input initial snow albedo
@@ -248,9 +247,9 @@ double SEMIC::Albedo_ISBA(double alb, double sf, double melt, double tstic, doub
 	alb = (1.0 - w_alb) * alb_dry + w_alb * alb_wet + alb_new;
 	alb = min(alb_smax, max(alb, alb_smin));
 	return alb;
-}
+}/*}}}*/
 
-double SEMIC::ew_sat(double t){
+double SEMIC::ew_sat(double t){/*{{{*/
 	/* Saturation water vapor prepssure over water
 
 	t - temperature (unit: K)
@@ -259,8 +258,8 @@ double SEMIC::ew_sat(double t){
 	double fsat;
 	fsat = 611.2 * exp(17.62 * (t-T0) /(243.12+t-T0));
 	return fsat;
-}
-double SEMIC::ei_sat(double t){
+}/*}}}*/
+double SEMIC::ei_sat(double t){/*{{{*/
 	/* Saturation water vapor prepssure over ice.
 
 	t - temperature (unit: K)
@@ -269,7 +268,7 @@ double SEMIC::ei_sat(double t){
 	double fsat;
 	fsat = 611.2 * exp(22.46 * (t-T0) /(272.62+t-T0));
 	return fsat;
-}
+}/*}}}*/
 
 void SEMIC::RunEnergyBalance() { /* {{{ */
 	/* Calculate surface energy balance */
@@ -316,7 +315,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 } /* }}} */
 
-void SEMIC::RunMassBalance(){
+void SEMIC::RunMassBalance(){/*{{{*/
 	/* Calculate mass balance
 	*/
 	int i;
@@ -494,7 +493,7 @@ void SEMIC::RunMassBalance(){
 	qcold.clear();
 
 	refrozen_rain.clear();
-}
+}/*}}}*/
 
 void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	/* Run 
