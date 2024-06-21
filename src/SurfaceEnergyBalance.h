@@ -26,10 +26,6 @@ const double EPSILON = numeric_limits<double>::epsilon(); /* epsilon */
 
 using namespace std;
 
-/* Type definition */
-typedef vector<double> DoubleVector;
-typedef vector<int> IntVector;
-
 class SEMIC{ /* {{{ */
 	public:
 		/* Initialize variable {{{ */
@@ -97,7 +93,7 @@ class SEMIC{ /* {{{ */
 		void		LongwaveRadiationUp();
 		void		TestReturnVector(vector<double> &tmp);
 
-		void		DiurnalCycle(double tmean, double &above, double &below);
+		void		DiurnalCycle(double tmean, double amp, double &above, double &below);
 
 		/* Albedo schemes */
 		double Albedo_Slater(double tsurf, double tmin, double tmax, double alb_smax, double alb_smin);
@@ -112,5 +108,4 @@ class SEMIC{ /* {{{ */
 		void		RunMassBalance();
 		void		RunEnergyAndMassBalance();
 }; /* }}} */
-
 #endif
