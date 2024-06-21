@@ -6,11 +6,24 @@ project(SEMIC-cpp VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 11)
 set(PYSEMIC pySEMIC)
 
+option(USE_OPENMP "Use OpenMP for parallelization" ON)
+
+# find openmp package
+if (USE_OPENMP)
+	find_package(OpenMP)
+	if (NOT OpenMP_CXX_FOUND)
+		message(WARNING "OpenMP not found, proceeding without it.")
+	endif()
+endif()
+
 #add_subdirectory(pybind11)
 find_package(Python3 REQUIRED Interpreter Development)
 #find_package(PythonInterp REQUIRED 3.9)
 find_package(pybind11 REQUIRED)
 pybind11_add_module(${PYSEMIC} src/pySEMIC.cpp src/SurfaceEnergyBalance.cpp)
+if (USE_OPENMP AND OpenMP_CXX_FOUND)
+	target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
+endif()
 
 # pybind11_add_module(MyLib src/pybind.cpp)
 #target_compile_definitions(pySEMIC PRIVATE)
