@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from VaporPressure import VaporPressure
+from .VaporPressure import VaporPressure
 
 __all__ = ['Dewpoint2SpecificHumidity']
 def Dewpoint2SpecificHumidity(dewpoint, Ps):
