@@ -1,6 +1,6 @@
-#include "SurfaceEnergyBalance.h"
-#include "SemicParameters.h"
 #include "omp.h"
+#include "SemicParameters.h"
+#include "SurfaceEnergyBalance.h"
 
 SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
@@ -11,10 +11,10 @@ SEMIC::SEMIC(void){ /*{{{*/
 
 	this->InitializeParameters();
 } /*}}}*/
-SEMIC::~SEMIC(void){
+SEMIC::~SEMIC(void){ /*{{{*/
 	delete Param;
 	delete Const;
-}
+} /*}}}*/
 
 void SEMIC::Initialize(int nx){ /* {{{ */
 		/*
@@ -75,7 +75,7 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 	this->Param->tmax = 273.15;
 	this->Param->hcrit = 0.028;
 	this->Param->rcrit = 0.79;
-	this->Param->amp = 3.5;
+	this->Param->amp = DoubleVector(nx,3.5);
 	this->alb_scheme = 0;
 	this->Param->tau_a = 0.008;
 	this->Param->tau_f = 0.24;
@@ -188,10 +188,9 @@ void SEMIC::TestReturnVector(vector<double> &tmp){ /*{{{*/
 	}
 }/*}}}*/
 
-void SEMIC::DiurnalCycle(double tmean, double &above, double &below){ /*{{{*/
+void SEMIC::DiurnalCycle(double tmean, double amp, double &above, double &below){ /*{{{*/
 	/* semic-f90: diurnal_cycle
 	*/
-	double amp = this->Param->amp; /* temperature amplitude*/
 	double tmp1, tmp2; /* temporal variable */
 	
 	/* Check consistency*/
@@ -401,7 +400,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	for (i=0; i<nx; i++){
 		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
 		if (this->verbose) cout << "   step1: calculate above/below freezing temperature\n";
-		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic, above[i], below[i]);
+		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic,
+					this->Param->amp[i], above[i], below[i]);
 
 		this->qmr[i] = 0.;
 	

@@ -2,6 +2,12 @@
 #define SEMICPARAMETERS_H
 
 #include "iostream"
+#include "vector"
+
+/* Type definition */
+typedef std::vector<double> DoubleVector;
+typedef std::vector<int> IntVector;
+
 using namespace std;
 
 class SemicParameters{ /* {{{ */
@@ -14,7 +20,7 @@ class SemicParameters{ /* {{{ */
 		
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
-		double amp;   /* Amplitude of diuranl cycle [unit: K] */
+		DoubleVector amp;   /* Amplitude of diuranl cycle [unit: K] */
 		double csh;   /* Sensible heat exchange coefficient */
 		double clh;   /* Latent heat exchange coefficient [no unit] */
 		
