@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 import numpy as np
 import os, sys, platform
-sys.path.append('../install/lib')
-import pySEMIC
+import pyseb
 
 def test_load(): # {{{
     nx = 10
-    semic = pySEMIC.SEMIC()
+    semic = pyseb.libpysemic.SEMIC()
     semic.Initialize(nx)
     semic.Display()
     print(semic.sf)
@@ -17,7 +16,7 @@ def test_load(): # {{{
     # }}}
 
 def test_load_parameters(): # {{{
-    semic = pySEMIC.SEMIC()
+    semic = pyseb.SEMIC()
     param = semic.Param
     const = semic.Const
     print(semic.Param.ceff)
@@ -29,7 +28,7 @@ def test_load_parameters(): # {{{
 
 def test_LongwaveRadiation(): # {{{
     nx = 10
-    semic = pySEMIC.SEMIC()
+    semic = pyseb.SEMIC()
     semic.Initialize(nx)
 
     ONES = np.ones((nx,))
@@ -42,10 +41,10 @@ def test_LongwaveRadiation(): # {{{
     print(semic.lwup)
     # }}}
 
-def test_RunSemic():
+def test_RunSemic(): # {{{
     import matplotlib.pyplot as plt
 
-    semic = pySEMIC.SEMIC()
+    semic = pyseb.SEMIC()
     nx = 1
     ONES = np.ones((nx,))
 
@@ -70,6 +69,9 @@ def test_RunSemic():
     # initialize albedo
     semic.alb = 0.85*ONES[:]
     semic.tsurf = (273.15-10)*ONES[:]
+
+    # initial parameters
+    semic.Param.amp = 3*ONES[:]
 
     ntime = len(t2m)
     print(f'   t2m: {semic.t2m}')
@@ -101,8 +103,10 @@ def test_RunSemic():
     fig, ax = plt.subplots()
     ax.plot(np.arange(ntime), smb.ravel())
     plt.show()
+    # }}}
 
 if __name__ == '__main__':
+    print('   Do main')
     #test_load()
     #test_load_parameters()
     #test_LongwaveRadiation()

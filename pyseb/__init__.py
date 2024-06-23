@@ -1,3 +1,4 @@
 #!/usr/bin/env python3
 from . import io, utils
-# import .libpysemic
+from .libpysemic import SEMIC
+from . import example

@@ -5,7 +5,7 @@
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pySEMIC, m){
+PYBIND11_MODULE(libpysemic, m){
 	m.doc() = "SEMIC module in python.";
 
 	py::class_<SemicParameters>(m, "Param")
