@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
 import multiprocessing, tqdm, functools, os
+from ..geometry.GetAreas import GetAreas
 def AreaSum(i, data, elements, flags, Areas):
    out = np.sum(Areas*np.mean(data[elements[flags,:],i]))
    return out
 
-def TransientTotalTimeSeries(elements, x, y, data,**kwargs):
+def TransientTotalTimeSeries(elements, x, y, data, **kwargs):
 	'''TransientTotalTimeSeries - compute total data evolution through time
 
 	Usage
@@ -42,18 +43,22 @@ def TransientTotalTimeSeries(elements, x, y, data,**kwargs):
 
 	# check input argument.
 	isparallel = 0
-	if len(args) == 1:
-		mask = args[0]
-		if len(mask) != npts:
-			raise Exception('ERROR: input mask size is = {}. Only ({},1) size of array is required for masking'.format(np.shape(mask),npts))
-	elif len(args) > 1 | len(args) == 0:
-		options = pairoptions(*args)
-		ismean = options.getfieldvalue('mean',0)
-		mask   = options.getfieldvalue('mask',np.ones((npts,),dtype=int))
-		isparallel = options.getfieldvalue('parallel',0)
-		isverbose  = options.getfieldvalue('verbose',1)
+	if 'mean' in list(kwargs):
+		ismean = kwargs['mean']
+	else:
+		ismean = 0
+	if 'mask' in list(kwargs):
+		mask = kwargs['mask']
 	else:
 		mask = np.ones((npts,),dtype=int)
+	if 'parallel' in list(kwargs):
+		isparallel = kwargs['paralllel']
+	else:
+		isparallel = 0
+	if 'verbose' in list(kwargs):
+		isverbose = kwargs['verbose']
+	else:
+		isverbose = 0
 
 	# where is masking part?
 	flags = (np.sum(mask[elements],1) == 3)
