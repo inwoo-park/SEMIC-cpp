@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 import numpy as np
-import xarray
+import xarray, netCDF4
 import os, sys, platform
 
+import xarray.backends
+
 __all__ = ['interpXarrayGridToMesh']
-def interpXarrayGridToMesh(fname, X, Y, varname=None, xname='lon', yname='lat', verbose:bool=False, method='linear', return_xarray:bool=True): # {{{
+def interpXarrayGridToMesh(fname, X, Y, varname=None, xname='lon', yname='lat', verbose:bool=False, method='linear', return_xarray:bool=True, use_netcdf:bool=True): # {{{
     '''interpXarray - interpolate netcdf file with xarray in python.
 
     Usage
@@ -30,6 +32,7 @@ def interpXarrayGridToMesh(fname, X, Y, varname=None, xname='lon', yname='lat', 
     xname : str (default: 'lon') - x coordinate name.
     yname : str (default: 'lat') - y coordinate name.
     verbose: bool (default: False) - show process.
+    use_netcdf:bool (default: True) - use to load netcdf file with "netCDF4" module.
 
     return_xarray: bool (default: True) - return results with xarray
 
@@ -45,7 +48,11 @@ def interpXarrayGridToMesh(fname, X, Y, varname=None, xname='lon', yname='lat', 
 
     # Check input format.
     if isinstance(fname,str):
-        ds = xarray.load_dataset(fname)
+        if use_netcdf:
+            ds = netCDF4.Dataset(fname)
+            ds = xarray.open_dataset(xarray.backends.NetCDF4DataStore(ds))
+        else:
+            ds = xarray.load_dataset(fname)
     elif isinstance(fname,(xarray.core.dataset.Dataset, xarray.core.dataarray.DataArray)):
         ds = fname.copy()
     else:
@@ -69,7 +76,7 @@ def interpXarrayGridToMesh(fname, X, Y, varname=None, xname='lon', yname='lat', 
             dims = list(ds.sizes)
         else:
             dims = list(ds.dims)
-
+    
     if not xname in dims:
         raise Exception(f'ERROR: Given xname (={xname}) is not defined in {dims}')
     elif not yname in dims:
