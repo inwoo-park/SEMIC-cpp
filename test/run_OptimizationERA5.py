@@ -11,7 +11,7 @@
 
 # # Load modules
 
-# In[136]:
+# In[36]:
 
 
 def isnotebook():
@@ -51,13 +51,13 @@ import multiprocessing
 from interpRACMO23p2_ERA5 import *
 from interpXarrayGridToMesh import *
 import xarray
-
+import shutil
 import argparse
 
 
 # # Initialize arguments
 
-# In[137]:
+# In[6]:
 
 
 parser = argparse.ArgumentParser(prog='Optimization',
@@ -96,10 +96,15 @@ print(f'freq:    {args.freq}')
 print(f'debug:   {args.debug}')
 print(f'opt_method: {args.opt_method}')
 
+if os.path.isdir(args.datadir):
+    print('   Remove existing directory')
+    shutil.rmtree(args.datadir)
+os.mkdir(args.datadir)
+
 
 # # Load ANT model
 
-# In[138]:
+# In[22]:
 
 
 print(f'Load ANT model')
@@ -111,7 +116,7 @@ md = md.extract(racmo_melt.mean(axis=1) > 0.)
 print(f'   number of vertices: {md.mesh.numberofvertices}')
 
 
-# In[139]:
+# In[23]:
 
 
 print(f'IMBIE2: interpolate imbie mask')
@@ -126,7 +131,7 @@ if isnotebook():
 
 # # Load RACMO23p2-ERA5
 
-# In[140]:
+# In[24]:
 
 
 # m/yr -> water m/sec
@@ -164,7 +169,7 @@ del racmo_smb, racmo_melt, racmo_tsurf, racmo_swsn
 
 # # Load ERA5 dataset
 
-# In[141]:
+# In[25]:
 
 
 if 0: # interpoalte! dataset
@@ -189,7 +194,7 @@ else:
 
 # # Initialize forcing variables of ERA5 for SEMIC
 
-# In[142]:
+# In[26]:
 
 
 rho_freshwater = 1000 # kg m-3
@@ -236,7 +241,7 @@ print(f'ERA5: Available maximum size of time: {ntime}')
 
 # # Prepare PSO optimization
 
-# In[143]:
+# In[27]:
 
 
 import operator
@@ -248,7 +253,7 @@ import random
 random.seed(100)
 
 
-# In[144]:
+# In[28]:
 
 
 # optimization with parameters
@@ -286,7 +291,7 @@ else:
     raise Exception('ERROR: Not supported yet.')
 
 
-# In[145]:
+# In[29]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -294,7 +299,7 @@ creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list,
     smin=None, smax=None, best=None)
 
 
-# In[146]:
+# In[30]:
 
 
 def generate(opts_bnd):
@@ -313,7 +318,7 @@ def generate(opts_bnd):
     return part
 
 
-# In[172]:
+# In[31]:
 
 
 def updateParticle(part, best, phi1=2, phi2=2, omega=0.5):
@@ -346,7 +351,7 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=0.5):
         part[key] = loc[idx]
 
 
-# In[173]:
+# In[32]:
 
 
 def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
@@ -475,7 +480,7 @@ def evaluateSEMIC_wrap(part, md, mask_imbie, forc, queue, sema):
     sema.release()
 
 
-# In[177]:
+# In[33]:
 
 
 # Save each generation
@@ -484,14 +489,16 @@ def saveGeneration(fname, pop, best):
     for idx, part in enumerate(pop):
         data[idx] = {'part':part,
                   'fitness':part.fitness.values,
-                  'speed':part.fitness.values,
+                  'speed':part.speed,
                   'local_best':part.best,
-                  'global_best':best}
+                  'local_best_fitness':part.best.fitness.values,
+                  'global_best':best,
+                  'global_best_fitness':best.fitness.values}
     with open(fname,'w') as fid:
         json.dump(data, fid)
 
 
-# In[178]:
+# In[34]:
 
 
 toolbox = base.Toolbox()
@@ -505,9 +512,11 @@ if isnotebook():
     pop = toolbox.population(n=10) # test
     print(pop[0])
     print(pop[0].smax)
+    print(pop[0].smin)
+    print(pop[0].speed)
 
 
-# In[179]:
+# In[35]:
 
 
 random.seed(100)
@@ -583,10 +592,4 @@ for g in range(GEN):
     print(f'   Elapsed time: {datetime.datetime.now()-tstart}')
 
 print(f'   Total elapsed time: {datetime.datetime.now()-tstart_glob}')
-
-
-# In[ ]:
-
-
-
 
