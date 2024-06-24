@@ -27,7 +27,7 @@ class get_pybind_include(object):
 ext_modules = [
         Pybind11Extension(
             'pyseb.libpysemic', # install libpysemic in "pyseb" directory.
-            ['src/pySEMIC.cpp','src/SurfaceEnergyBalance.cpp'],
+            ['src/libpysemic.cpp','src/SurfaceEnergyBalance.cpp'],
             define_macros=[('VERSION_INFO',__version__)],
         ),
         Pybind11Extension(
