@@ -1,3 +1,8 @@
 {
-	"editor.wordWrap": "wordWrapColumn"
+	"editor.wordWrap": "wordWrapColumn",
+	"[python]": {
+	"editor.insertSpaces": true,
+	"editor.tabSize": 4
+	}
+	// "cmake.cmakePath": "/path/to/cmake"
 }
