@@ -35,7 +35,7 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 	find_package(pybind11 REQUIRED)
 endif()
 
-pybind11_add_module(${PYSEMIC} src/pySEMIC.cpp src/SurfaceEnergyBalance.cpp)
+pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
 if (USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
 endif()
