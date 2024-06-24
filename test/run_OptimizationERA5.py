@@ -68,6 +68,11 @@ parser.add_argument('-ngen',type=int,
 parser.add_argument('-npop',type=int,
                    help='Set number of population',
                    default=10)
+parser.add_argument('-ncpu',default=30,type=int,
+                   help='Set set number of cpu for parallel computing',)
+parser.add_argument('-omega',default=0.5, type=float,
+                   help='Inertia weight (high -> global optial, low -> local optimal)',
+                   )
 parser.add_argument('-f',
                    help='dummy part for ipython')
 parser.add_argument('-datadir',type=str,
@@ -95,6 +100,8 @@ print(f'ngen:    {args.ngen}')
 print(f'freq:    {args.freq}')
 print(f'debug:   {args.debug}')
 print(f'opt_method: {args.opt_method}')
+print(f'===== system information')
+print(f'number of cpu: {args.ncpu}')
 
 if os.path.isdir(args.datadir):
     print('   Remove existing directory')
@@ -321,7 +328,7 @@ def generate(opts_bnd):
 # In[31]:
 
 
-def updateParticle(part, best, phi1=2, phi2=2, omega=0.5):
+def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
     '''update particle location
     '''
     npts = len(part.speed)
@@ -516,7 +523,7 @@ if isnotebook():
     print(pop[0].speed)
 
 
-# In[35]:
+# In[43]:
 
 
 random.seed(100)
@@ -528,7 +535,7 @@ os.makedirs(datadir,exist_ok=1)
 
 best = None
 output_queue = multiprocessing.Queue()
-semaphore = multiprocessing.Semaphore(20)
+semaphore = multiprocessing.Semaphore(args.ncpu)
 pop = toolbox.population(n=npop)
 
 # initialize log book
@@ -567,17 +574,22 @@ for g in range(GEN):
         part.fitness.values = [value]
 
     # print('   search global and local best.')
-    for part in pop:
+    for idx, part in enumerate(pop):
         if not part.best or part.best.fitness < part.fitness:
             part.best = creator.Particle(part)
             part.best.fitness.values = part.fitness.values
         if not best or best.fitness < part.fitness:
+            print(f'-- Find global best in {idx}')
             best = creator.Particle(part)
             best.fitness.values = part.fitness.values
 
     # print('   update particle location.')
+    # print('-- Previous')
+    # print(pop[0])
     for part in pop:
         toolbox.update(part, best)
+    # print('-- Updated')
+    # print(pop[0])
     
     # Gather all the fitnesses in one list and print the stats
     logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
