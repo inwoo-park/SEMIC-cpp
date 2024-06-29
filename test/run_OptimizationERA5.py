@@ -11,7 +11,7 @@
 
 # # Load modules
 
-# In[36]:
+# In[ ]:
 
 
 def isnotebook():
@@ -57,7 +57,7 @@ import argparse
 
 # # Initialize arguments
 
-# In[6]:
+# In[ ]:
 
 
 parser = argparse.ArgumentParser(prog='Optimization',
@@ -93,14 +93,19 @@ args = parser.parse_args()
 
 if isnotebook():
     args.freq      = 'mon'
+    args.ngen  = 2
+    args.npop  = 10
+    args.nloop = 2
     args.opt_method=2
     args.debug = 1 # force to change
+    args.amp_max  = 10.
 
 print(f'Information with given argument.')
 print(f'datadir: {args.datadir}')
 print(f'npop:    {args.npop}')
 print(f'ngen:    {args.ngen}')
 print(f'freq:    {args.freq}')
+print(f'-- amp_max: {args.amp_max}')
 print(f'debug:   {args.debug}')
 print(f'opt_method: {args.opt_method}')
 print(f'===== system information')
@@ -114,7 +119,7 @@ os.mkdir(args.datadir)
 
 # # Load ANT model
 
-# In[22]:
+# In[ ]:
 
 
 print(f'Load ANT model')
@@ -126,7 +131,7 @@ md = md.extract(racmo_melt.mean(axis=1) > 0.)
 print(f'   number of vertices: {md.mesh.numberofvertices}')
 
 
-# In[23]:
+# In[ ]:
 
 
 print(f'IMBIE2: interpolate imbie mask')
@@ -141,7 +146,7 @@ if isnotebook():
 
 # # Load RACMO23p2-ERA5
 
-# In[24]:
+# In[ ]:
 
 
 # m/yr -> water m/sec
@@ -179,7 +184,7 @@ del racmo_smb, racmo_melt, racmo_tsurf, racmo_swsn
 
 # # Load ERA5 dataset
 
-# In[25]:
+# In[ ]:
 
 
 if 0: # interpoalte! dataset
@@ -204,7 +209,7 @@ else:
 
 # # Initialize forcing variables of ERA5 for SEMIC
 
-# In[26]:
+# In[ ]:
 
 
 rho_freshwater = 1000 # kg m-3
@@ -251,7 +256,7 @@ print(f'ERA5: Available maximum size of time: {ntime}')
 
 # # Prepare PSO optimization
 
-# In[27]:
+# In[ ]:
 
 
 import operator
@@ -263,7 +268,7 @@ import random
 random.seed(100)
 
 
-# In[28]:
+# In[ ]:
 
 
 # optimization with parameters
@@ -307,10 +312,9 @@ else:
 # 
 # ## SEMIC-mon experiment
 # 
-# * amplitude of maximum temperature should be larger than previous one.
-# * 
+# * Amplitude of maximum temperature should be larger than previous one (e.g., 5 K).
 
-# In[29]:
+# In[ ]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -318,26 +322,34 @@ creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list,
     smin=None, smax=None, pmin=None, pmax=None, best=None)
 
 
-# In[30]:
+# In[ ]:
 
 
 def generate(opts_bnd):
     _parts = {}
     smin   = []
     smax   = []
+    # maximum and minimum position for each particle.
+    pmax   = []
+    pmin   = []
     for key, value in opts_bnd.items():
         _parts[key] = random.uniform(value[0], value[1])
         smin.append(-0.2*(value[1] - value[0]))
         smax.append( 0.2*(value[1] - value[0]))
+        pmax.append(value[1])
+        pmin.append(value[0])
     # _parts = [random.uniform(_pmin, _pmax) for _pmin, _pmax in zip(pmin, pmax)]
     part = creator.Particle(_parts) 
     part.speed = [random.uniform(_smin, _smax) for _smin, _smax in zip(smin, smax)]
     part.smin = smin
     part.smax = smax
+    part.pmin = pmin
+    part.pmax = pmax
+    
     return part
 
 
-# In[31]:
+# In[ ]:
 
 
 def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
@@ -358,6 +370,8 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
     v_u2 = map(operator.mul, u2, map(operator.sub, loc_global_best, loc))
     part.speed = list(map(operator.add, list(map(operator.mul, [omega]*npts, part.speed)),
                           map(operator.add, v_u1, v_u2)))
+
+    # constrain its maximum and minimum speed.
     for i, speed in enumerate(part.speed):
         if abs(speed) < part.smin[i]:
             part.speed[i] = math.copysign(part.smin[i], speed)
@@ -365,12 +379,19 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
             part.speed[i] = math.copysign(part.smax[i], speed)
     loc = list(map(operator.add, loc, part.speed))
 
+    # constrain its max. and min. position
+    for idx, key, value in zip(range(len(part)), part.keys(), part.values()):
+        if part[key] > part.pmax[idx]:
+            part[key] = part.pmax[idx]
+        if part[key] < part.pmin[idx]:
+            part[key] = part.pmin[idx]
+
     # update dict
     for idx, key in enumerate(part.keys()):
         part[key] = loc[idx]
 
 
-# In[32]:
+# In[ ]:
 
 
 def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
@@ -503,7 +524,7 @@ def evaluateSEMIC_wrap(part, md, mask_imbie, forc, queue, sema):
     sema.release()
 
 
-# In[33]:
+# In[ ]:
 
 
 # Save each generation
@@ -521,7 +542,7 @@ def saveGeneration(fname, pop, best):
         json.dump(data, fid)
 
 
-# In[34]:
+# In[ ]:
 
 
 toolbox = base.Toolbox()
@@ -539,7 +560,7 @@ if isnotebook():
     print(pop[0].speed)
 
 
-# In[43]:
+# In[ ]:
 
 
 random.seed(100)
