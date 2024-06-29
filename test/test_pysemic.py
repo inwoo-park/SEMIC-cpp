@@ -110,8 +110,10 @@ def test_tqdm(): # {{{
     '''
     import tqdm
 
+    istqdm = 1
+
     # disable option for not showing tqdm.
-    for i in tqdm.tqdm(range(10), disable=True):
+    for i in tqdm.tqdm(range(10), disable=(not istqdm)):
         print(i)
     # }}}
 
