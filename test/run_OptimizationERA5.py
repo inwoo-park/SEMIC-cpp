@@ -636,7 +636,7 @@ for g in range(GEN):
     print(logbook.stream)
 
     # okay, save each particle dataset
-    saveGeneration(os.path.join(datadir,'PSO_gen%d.json'%(g)), pop, best)
+    saveGeneration(os.path.join(datadir,'PSO_gen%03d.json'%(g)), pop, best)
 
     dflog.loc[len(dflog)] = logbook[-1]
     dflog.to_csv(os.path.join(datadir,'PSO_summary.csv'))
