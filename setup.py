@@ -63,6 +63,7 @@ setup(
             'matplotlib',
             'tqdm',
             'xarray',
+            'netCDF4',
         ],
         # which required directory?
         packages=find_packages(include=['pyseb']),
