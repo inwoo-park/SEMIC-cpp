@@ -3,6 +3,9 @@ install
 test/data/
 *.json
 
+# ---> VSCODE special.
+.vs/*
+
 # ---> matlab
 *.mat
 
