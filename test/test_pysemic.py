@@ -105,9 +105,20 @@ def test_RunSemic(): # {{{
     plt.show()
     # }}}
 
+def test_tqdm(): # {{{
+    '''check tqdm show progress bar
+    '''
+    import tqdm
+
+    # disable option for not showing tqdm.
+    for i in tqdm.tqdm(range(10), disable=True):
+        print(i)
+    # }}}
+
 if __name__ == '__main__':
     print('   Do main')
     #test_load()
     #test_load_parameters()
     #test_LongwaveRadiation()
-    test_RunSemic()
+    # test_RunSemic()
+    test_tqdm()
