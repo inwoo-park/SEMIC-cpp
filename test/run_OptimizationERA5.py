@@ -81,6 +81,9 @@ parser.add_argument('-debug',type=int,
                    default=0)
 parser.add_argument('-freq',type=str,default='day',
                    help='frequnecy of forcing variable. "day" or "mon" is available.')
+parser.add_argument('-amp_max',type=float, default=5,
+                    help='available maximum temperature amplitude for "monthly" experiment". (default: 5)',
+                    )
 parser.add_argument('-opt_method',type=int,default=1,
                    help='''optimization method for monthly dataset.
                    1: use homogeneous melting
@@ -285,7 +288,7 @@ elif args.freq == 'mon':
         opts['albi']     = [0.2, 0.6]
     elif args.opt_method == 2:
         for nb in range(16):
-            opts['amp%d'%(nb)]      = [1, 5]
+            opts['amp%d'%(nb)] = [1, args.amp_max]
         opts['hcrit']    = [np.log10(0.001), np.log10(1)]
         opts['rcrit']    = [0, 1]
         opts['mcrit']    = [np.log10(1e-9), np.log10(1e-7)]
@@ -298,12 +301,21 @@ else:
     raise Exception('ERROR: Not supported yet.')
 
 
+# # Initialize particle information
+# 
+# ## SEMIC-day experiment
+# 
+# ## SEMIC-mon experiment
+# 
+# * amplitude of maximum temperature should be larger than previous one.
+# * 
+
 # In[29]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
 creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list, 
-    smin=None, smax=None, best=None)
+    smin=None, smax=None, pmin=None, pmax=None, best=None)
 
 
 # In[30]:
@@ -378,7 +390,7 @@ def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
     ONES = np.ones((nx,),dtype=float)
     semic.mask = 2*np.ones((nx,),dtype=int)
     semic.verbose = 0
-    semic.alb_scheme = 3 # use denby albedo scheme
+    semic.alb_scheme = 3 # use isba albedo scheme
     
     semic.alb = 0.8*ONES[:]
     semic.alb_snow = 0.8*ONES[:]
@@ -457,19 +469,23 @@ def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
     matric1 = np.zeros((nx,))
     matric2 = np.zeros((nx,))
     matric3 = np.zeros((nx,))
+    matric4 = np.zeros((nx,))
+    
     for i in range(nx):
-        if args.debug == 1:
+        if args.debug:
             matric1[i] = nCRMSE(dsracmo['tsurf'][i,:12].values, dssemic['tsurf'][:12,i].values, omitnan=1)
             matric2[i] = nCRMSE(dsracmo['melt'][i,:12].values,  dssemic['melt'][:12,i].values, omitnan=1)
             matric3[i] = nCRMSE(dsracmo['swsn'][i,:12].values,  dssemic['swsn'][:12,i].values, omitnan=1)
+            matric4[i] = nCRMSE(dsracmo['smb'][i,:12].values,  dssemic['smb'][:12,i].values, omitnan=1)
         else:
             matric1[i] = nCRMSE(dsracmo['tsurf'][i,:].values, dssemic['tsurf'][:,i].values, omitnan=1)
             matric2[i] = nCRMSE(dsracmo['melt'][i,:].values,  dssemic['melt'][:,i].values, omitnan=1)
             matric3[i] = nCRMSE(dsracmo['swsn'][i,:].values,  dssemic['swsn'][:,i].values, omitnan=1)
+            matric4[i] = nCRMSE(dsracmo['smb'][i,:].values,  dssemic['smb'][:,i].values, omitnan=1)
 
-    matric4 = np.sqrt(matric1**2 + matric2**2 + matric3**2)
+    matric_fin = np.sqrt(matric1**2 + matric2**2 + matric3**2 + matric4**2)
     areas   = GetAreas(md.mesh.elements, md.mesh.x, md.mesh.y)
-    J = np.sum(areas*np.mean(matric4[md.mesh.elements-1],axis=1))
+    J = np.sum(areas*np.mean(matric_fin[md.mesh.elements-1],axis=1))
 
     return J
 
