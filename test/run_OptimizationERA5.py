@@ -82,8 +82,10 @@ parser.add_argument('-debug',type=int,
 parser.add_argument('-freq',type=str,default='day',
                    help='frequnecy of forcing variable. "day" or "mon" is available.')
 parser.add_argument('-amp_max',type=float, default=5,
-                    help='available maximum temperature amplitude for "monthly" experiment". (default: 5)',
+                    help='Available maximum temperature amplitude for "monthly" experiment". (default: 5)',
                     )
+parser.add_argument('-tqdm',type=int, default=0,
+                   help='Show tqdm progress bar. (default: 0)')
 parser.add_argument('-opt_method',type=int,default=1,
                    help='''optimization method for monthly dataset.
                    1: use homogeneous melting
@@ -99,6 +101,7 @@ if isnotebook():
     args.opt_method=2
     args.debug = 1 # force to change
     args.amp_max  = 10.
+    args.tqdm = True
 
 print(f'Information with given argument.')
 print(f'datadir: {args.datadir}')
@@ -593,7 +596,7 @@ for g in range(GEN):
     print('   Generation: %d/%d'%(g+1, GEN))
     procs  = []
     tstart = datetime.datetime.now()
-    for part in tqdm.tqdm(pop, bar_format='{l_bar}{bar:20}{r_bar}{bar:-10b}'):
+    for part in tqdm.tqdm(pop, bar_format='{l_bar}{bar:20}{r_bar}{bar:-10b}', disable=(not args.tqdm)):
         semaphore.acquire()
         p = multiprocessing.Process(target=toolbox.evaluate,
                                     args=(part, md, mask_imbie, force, output_queue, semaphore),
