@@ -61,6 +61,8 @@ setup(
             'pybind11',
             'numpy',
             'matplotlib',
+            'tqdm',
+            'xarray',
         ],
         # which required directory?
         packages=find_packages(include=['pyseb']),
