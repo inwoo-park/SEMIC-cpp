@@ -27,12 +27,12 @@ logger.setLevel(logging.INFO)
 logger.info('Initialize argument parsing')
 parser = argparse.ArgumentParser()
 parser.add_argument('-freq',default='mon',type=str,
-					help='Forcing variable frequency')
+                    help='Forcing variable frequency. "mon" and "day" are available. (default: mon)')
+parser.add_argument('-nloop',default=5,type=int,
+                    help='number of literation for SEMIC. (default: 5)')
 parser.add_argument('-debug',default=0,type=int,
-                    help='Debugging current script')
+                    help='Debugging current script. (default: False)')
 args = parser.parse_args()
-if __name__ == '__main__':
-      args.debug =1
 
 logger.info('Load Mat file')
 if args.freq == 'day':
@@ -61,10 +61,7 @@ forc['rhoa'] = pyseb.utils.AirDensityFromSpecificHumidity(forc['sp'], forc['t2m'
 
 ntime = forc['t2m'].shape[0]
 nx    = forc['t2m'].shape[1]
-if args.debug:
-    nloop = 1
-else:
-    nloop =5
+nloop = args.nloop
 
 logger.info('Load ANT model domain')
 nc = netCDF4.Dataset('../data/ANT_Mesh.nc')
@@ -85,26 +82,29 @@ logger.info("Prepare SEMIC parameters depending on frequency")
 ONES=np.ones((nx,)) # for grid information.
 semic.alb_scheme = 3 # Use denby alb snow parameterziation
 if args.freq == 'day':
-	logger.info('-- Catch daily parameter!')
-	'''
-	Tamp:     3.7010
+    logger.info('-- Catch daily parameter!')
+    '''
+    Tamp:     3.7010
     hcrit:    0.0061
     rcrit:    0.8927
     mcrit:    6.22e-09
     alb_smax: 0.9125
     alb_smin: 0.4832
     albi:     0.4651
-	'''
-	semic.Param.amp   = 3.7010*ONES[:]
-	semic.Param.hcrit = 0.0061
-	semic.Param.rcrit = 0.8927
-	semic.Param.mcrit = 6.22e-09
-	semic.Param.alb_smax = 0.9125
-	semic.Param.alb_smin = 0.4832
-	semic.Param.albi 	= 0.4651
+    '''
+    # Okay, we load best PSO-SEMIC results forced with daily dataset.
+    with open('./data/PSO_day_omega0.6_npop200.json','r') as fid:
+        part = json.load(fid)['0']['global_best']
+    semic.Param.amp   = part['amp']*ONES[:]
+    semic.Param.hcrit = 10**part['hcrit']
+    semic.Param.rcrit = part['rcrit']
+    semic.Param.mcrit = 10**part['mcrit']
+    semic.Param.alb_smax = part['alb_smax']
+    semic.Param.alb_smin = part['alb_smin']
+    semic.Param.albi 	= part['albi']
 elif args.freq == 'mon':
     logger.info('-- load semic parameters for monthly forcing.')
-    with open('./data/SEMIC_mon2_Param_PSO_gen10.json','r') as fid:
+    with open('./data/PSO_mon2_omega0.6_npop200.json','r') as fid:
           part = json.load(fid)['0']['global_best']
     amp = ONES[:]
     for nb in range(16):
@@ -152,8 +152,9 @@ for loop in range(nloop):
 logger.info('Export outptu in xarray.')
 rho_freshwater = 1000
 yts = 365*24*3600
-TotalSmb  = pyseb.utils.TransientTotalTimeSeries(elements-1, x, y ,smb,) * rho_freshwater/yts
-TotalMelt = pyseb.utils.TransientTotalTimeSeries(elements-1, x, y, melt) * rho_freshwater/yts
+# freshwater m3 sec-1 to Gt yr-1
+TotalSmb  = pyseb.utils.TransientTotalTimeSeries(elements-1, x, y ,smb,) * rho_freshwater*yts/1e+12
+TotalMelt = pyseb.utils.TransientTotalTimeSeries(elements-1, x, y, melt) * rho_freshwater*yts/1e+12
 
 semic_time = pandas.date_range(datetime.datetime(1980,1,1), periods=ntime)
 dssemic = xarray.Dataset(data_vars={'smb':(['nx','time'], smb),
