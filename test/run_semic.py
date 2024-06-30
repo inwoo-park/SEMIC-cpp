@@ -80,7 +80,7 @@ y = nc['/mesh/y'][:]
 logger.info(f'-- mesh.x = {x}')
 
 logger.info('Interpolate IMBIE2 basin.')
-mask_imbie = pyseb.interp.interpXarrayGridToMesh('../data/IMIBIE2/basinNumbers_8km.nc',x, y,xname='x',yname='y',varname='basinNumber',method='nearest')
+mask_imbie = pyseb.interp.interpXarrayGridToMesh('../data/IMBIE2/basinNumbers_8km.nc',x, y,xname='x',yname='y',varname='basinNumber',method='nearest')
 mask_imbie = np.array(mask_imbie.values, dtype=int)
 
 logger.info('Initialize SEMIC.')
