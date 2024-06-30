@@ -26,8 +26,12 @@ logger.setLevel(logging.INFO)
 
 logger.info('Initialize argument parsing')
 parser = argparse.ArgumentParser()
+parser.add_argument('prefix',type=str,
+                    help='Give which prefix do you want to run semic?')
 parser.add_argument('-freq',default='mon',type=str,
                     help='Forcing variable frequency. "mon" and "day" are available. (default: mon)')
+parser.add_argument('-alb_scheme',type=str,default='isba',
+                    help='Select specific albedo scheme. (default: isba)')
 parser.add_argument('-nloop',default=5,type=int,
                     help='number of literation for SEMIC. (default: 5)')
 parser.add_argument('-debug',default=0,type=int,
@@ -47,6 +51,10 @@ elif args.freq == 'mon':
         forc = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Month_1980,2000.mat')
 else:
 	logger.error("ERROR: Given freq vairlabe (={arg.freq}) is not available. Only day and mon are available.")
+
+# check consistency
+if not args.alb_scheme in ['slater','denby','isba']:
+    raise Exception('ERROR: Given albedo scheme (=%s) is not available. slater, denby and isba are available.')
 
 logger.info('-- calculate snow and rainfall flux')
 rho_freshwater = 1000 # kg m-3
@@ -104,13 +112,21 @@ if args.freq == 'day':
     semic.Param.albi 	= part['albi']
 elif args.freq == 'mon':
     logger.info('-- load semic parameters for monthly forcing.')
-    with open('./data/PSO_mon2_omega0.6_npop100_ampMax10.00.json','r') as fid:
+    with open('./data/PSO_mon2_{args.prefix}.json','r') as fid:
           part = json.load(fid)['0']['global_best']
     amp = ONES.copy()
     for nb in range(16):
         pos = (mask_imbie == nb)
         amp[pos] = part['amp%d'%(nb)]
     semic.Param.amp = amp[:]
+
+    # set albedo scheme
+    if args.alb_scheme == 'slater':
+        semic.alb_scheme = 1
+    elif args.alb_scheme == 'denby':
+        semic.alb_scheme = 2
+    elif args.alb_scheme == 'isba':
+        semic.alb_scheme = 3
     semic.Param.alb_smax = part['alb_smax']
     semic.Param.alb_smin = part['alb_smin']
     semic.Param.albi = part['albi']
@@ -125,8 +141,8 @@ melt    = np.zeros((nx,ntime))
 tsurf   = np.zeros((nx,ntime))
 alb     = np.zeros((nx,ntime))
 netswd  = np.zeros((nx,ntime))
-shf     = np.zeros((nx, ntime))
-lhf     = np.zeros((nx, ntime))
+shf     = np.zeros((nx,ntime))
+lhf     = np.zeros((nx,ntime))
 
 for loop in range(nloop):
     print(f'   nloop: {loop}')
@@ -171,7 +187,7 @@ dssemic = xarray.Dataset(data_vars={'smb':(['nx','time'], smb),
 dssemic = dssemic.resample(time="1MS").mean(dim='time')
 
 dssemic = dssemic.to_netcdf()
-ofname = f'./ANT_SEMIC_ERA5_{args.freq}.nc'
+ofname = f'./ANT_SEMIC_ERA5_{args.freq}_{args.prefix}.nc'
 logger.info('Export output: %s'%(ofname))
 with open(ofname,'wb') as fid:
       fid.write(dssemic)
