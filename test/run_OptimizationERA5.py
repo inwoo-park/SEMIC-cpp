@@ -11,7 +11,7 @@
 
 # # Load modules
 
-# In[ ]:
+# In[7]:
 
 
 def isnotebook():
@@ -57,7 +57,7 @@ import argparse
 
 # # Initialize arguments
 
-# In[ ]:
+# In[8]:
 
 
 parser = argparse.ArgumentParser(prog='Optimization',
@@ -81,6 +81,8 @@ parser.add_argument('-debug',type=int,
                    default=0)
 parser.add_argument('-freq',type=str,default='day',
                    help='frequnecy of forcing variable. "day" or "mon" is available.')
+parser.add_argument('-alb_scheme',type=str,default='isba',
+                   help='Choose albedo scheme. "slater","denby", and "isba" are available.')
 parser.add_argument('-amp_max',type=float, default=5,
                     help='Available maximum temperature amplitude for "monthly" experiment". (default: 5)',
                     )
@@ -104,12 +106,13 @@ if isnotebook():
     args.tqdm = True
 
 print(f'Information with given argument.')
-print(f'datadir: {args.datadir}')
-print(f'npop:    {args.npop}')
-print(f'ngen:    {args.ngen}')
-print(f'freq:    {args.freq}')
+print(f'datadir:    {args.datadir}')
+print(f'npop:       {args.npop}')
+print(f'ngen:       {args.ngen}')
+print(f'freq:       {args.freq}')
+print(f'alb_scheme: {args.alb_scheme}')
 print(f'-- amp_max: {args.amp_max}')
-print(f'debug:   {args.debug}')
+print(f'debug:      {args.debug}')
 print(f'opt_method: {args.opt_method}')
 print(f'===== system information')
 print(f'number of cpu: {args.ncpu}')
@@ -119,10 +122,14 @@ if os.path.isdir(args.datadir):
     shutil.rmtree(args.datadir)
 os.mkdir(args.datadir)
 
+# check consistency
+if not args.alb_scheme in ['slater','denby','isba']:
+    raise Exception('ERROR: Given albedo scheme (=%s) is not available. Use slater, denby, and isba.'%(args.alb_scheme))
+
 
 # # Load ANT model
 
-# In[ ]:
+# In[9]:
 
 
 print(f'Load ANT model')
@@ -134,7 +141,7 @@ md = md.extract(racmo_melt.mean(axis=1) > 0.)
 print(f'   number of vertices: {md.mesh.numberofvertices}')
 
 
-# In[ ]:
+# In[10]:
 
 
 print(f'IMBIE2: interpolate imbie mask')
@@ -149,7 +156,7 @@ if isnotebook():
 
 # # Load RACMO23p2-ERA5
 
-# In[ ]:
+# In[11]:
 
 
 # m/yr -> water m/sec
@@ -187,7 +194,7 @@ del racmo_smb, racmo_melt, racmo_tsurf, racmo_swsn
 
 # # Load ERA5 dataset
 
-# In[ ]:
+# In[12]:
 
 
 if 0: # interpoalte! dataset
@@ -212,7 +219,7 @@ else:
 
 # # Initialize forcing variables of ERA5 for SEMIC
 
-# In[ ]:
+# In[13]:
 
 
 rho_freshwater = 1000 # kg m-3
@@ -259,7 +266,7 @@ print(f'ERA5: Available maximum size of time: {ntime}')
 
 # # Prepare PSO optimization
 
-# In[ ]:
+# In[14]:
 
 
 import operator
@@ -271,36 +278,38 @@ import random
 random.seed(100)
 
 
-# In[ ]:
+# In[15]:
 
 
 # optimization with parameters
 #              min, max, smin, smax
 opts = {}
 if args.freq == 'day':
-    opts['amp']      = [1, 5]
-    opts['hcrit']    = [np.log10(0.001), np.log10(1)]
+    opts['amp']      = [1, args.amp_max]
+    opts['hcrit']    = [np.log10(0.01), np.log10(10)]
     opts['rcrit']    = [0, 1]
     opts['mcrit']    = [np.log10(1e-9), np.log10(1e-7)]
-    opts['alb_smax'] = [0.7, 0.95]
+    opts['alb_smax'] = [0.7, 0.90]
     opts['alb_smin'] = [0.2, 0.6]
     opts['albi']     = [0.2, 0.6]
 elif args.freq == 'mon':
     if args.opt_method == 1:
-        opts['amp']      = [1, 5]
-        opts['hcrit']    = [np.log10(0.001), np.log10(1)]
+        opts['amp']      = [1, args.amp_max]
+        opts['hcrit']    = [np.log10(0.01), np.log10(10)]
         opts['rcrit']    = [0, 1]
         opts['mcrit']    = [np.log10(1e-9), np.log10(1e-7)]
-        opts['alb_smax'] = [0.7, 0.95]
+        opts['alb_smax'] = [0.7, 0.90]
         opts['alb_smin'] = [0.2, 0.6]
         opts['albi']     = [0.2, 0.6]
     elif args.opt_method == 2:
+        '''use different temperature amplitude at each basin.
+        '''
         for nb in range(16):
             opts['amp%d'%(nb)] = [1, args.amp_max]
-        opts['hcrit']    = [np.log10(0.001), np.log10(1)]
+        opts['hcrit']    = [np.log10(0.01), np.log10(10)]
         opts['rcrit']    = [0, 1]
         opts['mcrit']    = [np.log10(1e-9), np.log10(1e-7)]
-        opts['alb_smax'] = [0.7, 0.95]
+        opts['alb_smax'] = [0.7, 0.90]
         opts['alb_smin'] = [0.2, 0.6]
         opts['albi']     = [0.2, 0.6]
     else:
@@ -313,11 +322,13 @@ else:
 # 
 # ## SEMIC-day experiment
 # 
+# * Amplitude of maximum temperature should be larger than previous one (e.g., 5 K).
+# 
 # ## SEMIC-mon experiment
 # 
 # * Amplitude of maximum temperature should be larger than previous one (e.g., 5 K).
 
-# In[ ]:
+# In[16]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -325,7 +336,7 @@ creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list,
     smin=None, smax=None, pmin=None, pmax=None, best=None)
 
 
-# In[ ]:
+# In[17]:
 
 
 def generate(opts_bnd):
@@ -352,7 +363,7 @@ def generate(opts_bnd):
     return part
 
 
-# In[ ]:
+# In[18]:
 
 
 def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
@@ -394,7 +405,7 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
         part[key] = loc[idx]
 
 
-# In[ ]:
+# In[19]:
 
 
 def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
@@ -414,7 +425,12 @@ def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
     ONES = np.ones((nx,),dtype=float)
     semic.mask = 2*np.ones((nx,),dtype=int)
     semic.verbose = 0
-    semic.alb_scheme = 3 # use isba albedo scheme
+    if args.alb_scheme == 'slater':
+        semic.alb_scheme = 1 # use slater albedo scheme
+    elif args.alb_scheme == 'denby':
+        semic.alb_scheme = 2 # use denby albedo scheme
+    elif args.alb_scheme == 'isba':
+        semic.alb_scheme = 3 # use isba albedo scheme
     
     semic.alb = 0.8*ONES[:]
     semic.alb_snow = 0.8*ONES[:]
@@ -497,15 +513,15 @@ def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
     
     for i in range(nx):
         if args.debug:
-            matric1[i] = nCRMSE(dsracmo['tsurf'][i,:12].values, dssemic['tsurf'][:12,i].values, omitnan=1)
-            matric2[i] = nCRMSE(dsracmo['melt'][i,:12].values,  dssemic['melt'][:12,i].values, omitnan=1)
-            matric3[i] = nCRMSE(dsracmo['swsn'][i,:12].values,  dssemic['swsn'][:12,i].values, omitnan=1)
-            matric4[i] = nCRMSE(dsracmo['smb'][i,:12].values,  dssemic['smb'][:12,i].values, omitnan=1)
+            matric1[i] = nRMSE(dsracmo['tsurf'][i,:12].values, dssemic['tsurf'][:12,i].values, omitnan=1)
+            matric2[i] = nRMSE(dsracmo['melt'][i,:12].values,  dssemic['melt'][:12,i].values, omitnan=1)
+            matric3[i] = nRMSE(dsracmo['swsn'][i,:12].values,  dssemic['swsn'][:12,i].values, omitnan=1)
+            matric4[i] = nRMSE(dsracmo['smb'][i,:12].values,  dssemic['smb'][:12,i].values, omitnan=1)
         else:
-            matric1[i] = nCRMSE(dsracmo['tsurf'][i,:].values, dssemic['tsurf'][:,i].values, omitnan=1)
-            matric2[i] = nCRMSE(dsracmo['melt'][i,:].values,  dssemic['melt'][:,i].values, omitnan=1)
-            matric3[i] = nCRMSE(dsracmo['swsn'][i,:].values,  dssemic['swsn'][:,i].values, omitnan=1)
-            matric4[i] = nCRMSE(dsracmo['smb'][i,:].values,  dssemic['smb'][:,i].values, omitnan=1)
+            matric1[i] = nRMSE(dsracmo['tsurf'][i,:].values, dssemic['tsurf'][:,i].values, omitnan=1)
+            matric2[i] = nRMSE(dsracmo['melt'][i,:].values,  dssemic['melt'][:,i].values, omitnan=1)
+            matric3[i] = nRMSE(dsracmo['swsn'][i,:].values,  dssemic['swsn'][:,i].values, omitnan=1)
+            matric4[i] = nRMSE(dsracmo['smb'][i,:].values,  dssemic['smb'][:,i].values, omitnan=1)
 
     matric_fin = np.sqrt(matric1**2 + matric2**2 + matric3**2 + matric4**2)
     areas   = GetAreas(md.mesh.elements, md.mesh.x, md.mesh.y)
@@ -527,7 +543,7 @@ def evaluateSEMIC_wrap(part, md, mask_imbie, forc, queue, sema):
     sema.release()
 
 
-# In[ ]:
+# In[20]:
 
 
 # Save each generation
@@ -545,7 +561,7 @@ def saveGeneration(fname, pop, best):
         json.dump(data, fid)
 
 
-# In[ ]:
+# In[21]:
 
 
 toolbox = base.Toolbox()
@@ -563,7 +579,7 @@ if isnotebook():
     print(pop[0].speed)
 
 
-# In[ ]:
+# In[22]:
 
 
 random.seed(100)
@@ -644,4 +660,10 @@ for g in range(GEN):
     print(f'   Elapsed time: {datetime.datetime.now()-tstart}')
 
 print(f'   Total elapsed time: {datetime.datetime.now()-tstart_glob}')
+
+
+# In[24]:
+
+
+print(pop[0].pmax)
 
