@@ -104,9 +104,9 @@ if args.freq == 'day':
     semic.Param.albi 	= part['albi']
 elif args.freq == 'mon':
     logger.info('-- load semic parameters for monthly forcing.')
-    with open('./data/PSO_mon2_omega0.6_npop200.json','r') as fid:
+    with open('./data/PSO_mon2_omega0.6_npop100_ampMax10.00.json','r') as fid:
           part = json.load(fid)['0']['global_best']
-    amp = ONES[:]
+    amp = ONES.copy()
     for nb in range(16):
         pos = (mask_imbie == nb)
         amp[pos] = part['amp%d'%(nb)]
@@ -149,7 +149,7 @@ for loop in range(nloop):
             alb[:,i]   = semic.alb
             netswd[:,i]= (1-alb[:,i])*forc['swd'][i,:]
 
-logger.info('Export outptu in xarray.')
+logger.info('Export output in xarray.')
 rho_freshwater = 1000
 yts = 365*24*3600
 # freshwater m3 sec-1 to Gt yr-1
@@ -170,5 +170,7 @@ dssemic = xarray.Dataset(data_vars={'smb':(['nx','time'], smb),
 dssemic = dssemic.resample(time="1MS").mean(dim='time')
 
 dssemic = dssemic.to_netcdf()
-with open(f'./ANT_SEMIC_ERA5_{args.freq}.nc','wb') as fid:
+ofname = f'./ANT_SEMIC_ERA5_{args.freq}.nc'
+logger.info('Export output: %s'%(ofname))
+with open(ofname,'wb') as fid:
       fid.write(dssemic)
