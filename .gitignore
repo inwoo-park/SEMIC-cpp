@@ -2,6 +2,8 @@
 install
 test/data/
 *.json
+*.outlog
+*.errlog
 
 # ---> VSCODE special.
 .vs/*
