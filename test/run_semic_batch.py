@@ -16,5 +16,5 @@ for exp in experiment:
     prefix = exp['prefix']
     freq   = exp['freq']
     alb_scheme = exp['alb_scheme']
-    command = f'python run_semic.py {prefix} -freq {mon} -alb_scheme={alb_scheme}'
+    command = f'python run_semic.py {prefix} -freq {freq} -alb_scheme={alb_scheme}'
     os.system(command)
