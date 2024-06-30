@@ -11,7 +11,7 @@
 
 # # Load modules
 
-# In[7]:
+# In[1]:
 
 
 def isnotebook():
@@ -57,7 +57,7 @@ import argparse
 
 # # Initialize arguments
 
-# In[8]:
+# In[2]:
 
 
 parser = argparse.ArgumentParser(prog='Optimization',
@@ -129,7 +129,7 @@ if not args.alb_scheme in ['slater','denby','isba']:
 
 # # Load ANT model
 
-# In[9]:
+# In[3]:
 
 
 print(f'Load ANT model')
@@ -141,7 +141,7 @@ md = md.extract(racmo_melt.mean(axis=1) > 0.)
 print(f'   number of vertices: {md.mesh.numberofvertices}')
 
 
-# In[10]:
+# In[4]:
 
 
 print(f'IMBIE2: interpolate imbie mask')
@@ -156,7 +156,7 @@ if isnotebook():
 
 # # Load RACMO23p2-ERA5
 
-# In[11]:
+# In[5]:
 
 
 # m/yr -> water m/sec
@@ -194,7 +194,7 @@ del racmo_smb, racmo_melt, racmo_tsurf, racmo_swsn
 
 # # Load ERA5 dataset
 
-# In[12]:
+# In[6]:
 
 
 if 0: # interpoalte! dataset
@@ -219,7 +219,7 @@ else:
 
 # # Initialize forcing variables of ERA5 for SEMIC
 
-# In[13]:
+# In[7]:
 
 
 rho_freshwater = 1000 # kg m-3
@@ -266,7 +266,7 @@ print(f'ERA5: Available maximum size of time: {ntime}')
 
 # # Prepare PSO optimization
 
-# In[14]:
+# In[8]:
 
 
 import operator
@@ -278,7 +278,7 @@ import random
 random.seed(100)
 
 
-# In[15]:
+# In[9]:
 
 
 # optimization with parameters
@@ -328,7 +328,7 @@ else:
 # 
 # * Amplitude of maximum temperature should be larger than previous one (e.g., 5 K).
 
-# In[16]:
+# In[10]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -336,7 +336,7 @@ creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list,
     smin=None, smax=None, pmin=None, pmax=None, best=None)
 
 
-# In[17]:
+# In[11]:
 
 
 def generate(opts_bnd):
@@ -363,7 +363,7 @@ def generate(opts_bnd):
     return part
 
 
-# In[18]:
+# In[12]:
 
 
 def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
@@ -405,7 +405,7 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
         part[key] = loc[idx]
 
 
-# In[19]:
+# In[13]:
 
 
 def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
@@ -543,7 +543,7 @@ def evaluateSEMIC_wrap(part, md, mask_imbie, forc, queue, sema):
     sema.release()
 
 
-# In[20]:
+# In[14]:
 
 
 # Save each generation
@@ -561,7 +561,7 @@ def saveGeneration(fname, pop, best):
         json.dump(data, fid)
 
 
-# In[21]:
+# In[15]:
 
 
 toolbox = base.Toolbox()
@@ -579,7 +579,21 @@ if isnotebook():
     print(pop[0].speed)
 
 
-# In[22]:
+# # Estimate the parameters
+# 
+# * logbook data will be stored in csv file format
+# * `PSO_summary.csv` file will contain following information
+# 
+#     * gen - denote generation.
+#     * evals - denote total number of evalulated population.
+#     * avg - averaged fitness value.
+#     * std - standard devaiation of fitness values.
+#     * min - minimum value of fitness value in population.
+#     * max - maximum value of fitness value in population.
+#     * elapsed_time - store elapsed time for each generation.
+#     * global_fitness - store best global fitness value for comparison.
+
+# In[16]:
 
 
 random.seed(100)
@@ -605,7 +619,7 @@ logbook = tools.Logbook()
 logbook.header = ["gen", "evals"] + stats.fields
 
 # initialize pandas dataframe
-dflog = pandas.DataFrame(columns=['gen','evals','avg','std','min','max'])
+dflog = pandas.DataFrame(columns=['gen','evals','avg','std','min','max','elapsed_time','global_fitness'])
 
 tstart_glob = datetime.datetime.now()
 for g in range(GEN):
@@ -648,22 +662,19 @@ for g in range(GEN):
     # print(pop[0])
     
     # Gather all the fitnesses in one list and print the stats
-    logbook.record(gen=g, evals=len(pop), **stats.compile(pop))
+    elapsed_time = str(datetime.datetime.now()-tstart)
+    logbook.record(gen=g, evals=len(pop), **stats.compile(pop), 
+                  elapsed_time=elapsed_time,
+                  global_fitness=best.fitness.values[0])
     print(logbook.stream)
 
     # okay, save each particle dataset
     saveGeneration(os.path.join(datadir,'PSO_gen%03d.json'%(g)), pop, best)
 
     dflog.loc[len(dflog)] = logbook[-1]
-    dflog.to_csv(os.path.join(datadir,'PSO_summary.csv'))
+    dflog.to_csv(os.path.join(datadir,'PSO_summary.csv'),index=False)
 
     print(f'   Elapsed time: {datetime.datetime.now()-tstart}')
 
 print(f'   Total elapsed time: {datetime.datetime.now()-tstart_glob}')
-
-
-# In[24]:
-
-
-print(pop[0].pmax)
 
