@@ -11,7 +11,7 @@
 
 # # Load modules
 
-# In[1]:
+# In[ ]:
 
 
 def isnotebook():
@@ -57,7 +57,7 @@ import argparse
 
 # # Initialize arguments
 
-# In[2]:
+# In[ ]:
 
 
 parser = argparse.ArgumentParser(prog='Optimization',
@@ -82,10 +82,14 @@ parser.add_argument('-debug',type=int,
 parser.add_argument('-freq',type=str,default='day',
                    help='frequnecy of forcing variable. "day" or "mon" is available.')
 parser.add_argument('-alb_scheme',type=str,default='isba',
+                    choices=['slater','denby','isba'],
                    help='Choose albedo scheme. "slater","denby", and "isba" are available.')
 parser.add_argument('-amp_max',type=float, default=5,
                     help='Available maximum temperature amplitude for "monthly" experiment". (default: 5)',
                     )
+parser.add_argument('-pso_method',type=str,default='wPSO',
+                    choices=['wPSO','APSO'],
+                   help='Choose pso method, which only changes updating the particle speed method.')
 parser.add_argument('-tqdm',type=int, default=0,
                    help='Show tqdm progress bar. (default: 0)')
 parser.add_argument('-opt_method',type=int,default=1,
@@ -96,14 +100,16 @@ parser.add_argument('-opt_method',type=int,default=1,
 args = parser.parse_args()
 
 if isnotebook():
-    args.freq      = 'mon'
+    args.freq  = 'mon'
     args.ngen  = 2
     args.npop  = 10
     args.nloop = 2
     args.opt_method=2
     args.debug = 1 # force to change
     args.amp_max  = 10.
+    args.pso_method = 'APSO'
     args.tqdm = True
+    args.datadir = os.path.join('./data', args.pso_method + '_mon2')
 
 print(f'Information with given argument.')
 print(f'datadir:    {args.datadir}')
@@ -129,7 +135,7 @@ if not args.alb_scheme in ['slater','denby','isba']:
 
 # # Load ANT model
 
-# In[3]:
+# In[ ]:
 
 
 print(f'Load ANT model')
@@ -141,7 +147,7 @@ md = md.extract(racmo_melt.mean(axis=1) > 0.)
 print(f'   number of vertices: {md.mesh.numberofvertices}')
 
 
-# In[4]:
+# In[ ]:
 
 
 print(f'IMBIE2: interpolate imbie mask')
@@ -156,7 +162,7 @@ if isnotebook():
 
 # # Load RACMO23p2-ERA5
 
-# In[5]:
+# In[ ]:
 
 
 # m/yr -> water m/sec
@@ -194,7 +200,7 @@ del racmo_smb, racmo_melt, racmo_tsurf, racmo_swsn
 
 # # Load ERA5 dataset
 
-# In[6]:
+# In[ ]:
 
 
 if 0: # interpoalte! dataset
@@ -219,7 +225,7 @@ else:
 
 # # Initialize forcing variables of ERA5 for SEMIC
 
-# In[7]:
+# In[ ]:
 
 
 rho_freshwater = 1000 # kg m-3
@@ -266,7 +272,7 @@ print(f'ERA5: Available maximum size of time: {ntime}')
 
 # # Prepare PSO optimization
 
-# In[8]:
+# In[ ]:
 
 
 import operator
@@ -278,7 +284,7 @@ import random
 random.seed(100)
 
 
-# In[9]:
+# In[ ]:
 
 
 # optimization with parameters
@@ -328,7 +334,7 @@ else:
 # 
 # * Amplitude of maximum temperature should be larger than previous one (e.g., 5 K).
 
-# In[10]:
+# In[ ]:
 
 
 creator.create("FitnessMin", base.Fitness, weights=(-1.0,))
@@ -336,7 +342,7 @@ creator.create("Particle", dict, fitness=creator.FitnessMin, speed=list,
     smin=None, smax=None, pmin=None, pmax=None, best=None)
 
 
-# In[11]:
+# In[ ]:
 
 
 def generate(opts_bnd):
@@ -363,11 +369,16 @@ def generate(opts_bnd):
     return part
 
 
-# In[12]:
+# In[ ]:
 
 
-def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
-    '''update particle location
+def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega, method_pso='wPSO'):
+    '''update particle location with w-PSO method
+
+    Variables
+    ---------
+    method_pso - update speed with given other method.
+                wPSO, APSO and etc. are available.
     '''
     npts = len(part.speed)
     loc             = []
@@ -377,13 +388,30 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
         loc.append(part[key])
         loc_local_best.append(part.best[key])
         loc_global_best.append(best[key])
+
+    loc = np.array(loc)
+    loc_local_best = np.array(loc_local_best)
+    loc_globa_best = np.array(loc_global_best)
+    part.speed = np.array(part.speed)
+
+    if method_pso == 'wPSO':
+        # use numpy operator rather than math    
+        u1 = np.array([random.uniform(0, phi1) for _ in range(len(part))])
+        u2 = np.array([random.uniform(0, phi2) for _ in range(len(part))])
     
-    u1 = (random.uniform(0, phi1) for _ in range(len(part)))
-    u2 = (random.uniform(0, phi2) for _ in range(len(part)))
-    v_u1 = map(operator.mul, u1, map(operator.sub, loc_local_best,  loc))
-    v_u2 = map(operator.mul, u2, map(operator.sub, loc_global_best, loc))
-    part.speed = list(map(operator.add, list(map(operator.mul, [omega]*npts, part.speed)),
-                          map(operator.add, v_u1, v_u2)))
+        v_u1 = u1*(loc_local_best  - loc)
+        v_u2 = u2*(loc_global_best - loc)
+        # v_u1 = map(operator.mul, u1, map(operator.sub, loc_local_best,  loc))
+        # v_u2 = map(operator.mul, u2, map(operator.sub, loc_global_best, loc))
+        # part.speed = list(map(operator.add, list(map(operator.mul, [omega]*npts, part.speed)),
+        #                      map(operator.add, v_u1, v_u2)))
+
+        part.speed = omega*part.speed + v_u1 + v_u2
+    elif method_pso == 'APSO':
+        alpha = 0.4 * np.array((part.pmin - part.pmax))
+        epsil = np.array([random.uniform(0, 1) for _ in range(len(part))])
+        beta  = 0.4
+        part.speed = part.speed + alpha*epsil + beta * (loc_global_best - loc)
 
     # constrain its maximum and minimum speed.
     for i, speed in enumerate(part.speed):
@@ -405,7 +433,7 @@ def updateParticle(part, best, phi1=2, phi2=2, omega=args.omega):
         part[key] = loc[idx]
 
 
-# In[13]:
+# In[ ]:
 
 
 def evaluateSEMIC(part, md, mask_imbie, force, nx=12744, ntime=365, nloop=2):
@@ -543,7 +571,7 @@ def evaluateSEMIC_wrap(part, md, mask_imbie, forc, queue, sema):
     sema.release()
 
 
-# In[14]:
+# In[ ]:
 
 
 # Save each generation
@@ -552,7 +580,7 @@ def saveGeneration(fname, pop, best):
     for idx, part in enumerate(pop):
         data[idx] = {'part':part,
                   'fitness':part.fitness.values,
-                  'speed':part.speed,
+                  'speed':list(part.speed),
                   'local_best':part.best,
                   'local_best_fitness':part.best.fitness.values,
                   'global_best':best,
@@ -561,7 +589,7 @@ def saveGeneration(fname, pop, best):
         json.dump(data, fid)
 
 
-# In[15]:
+# In[ ]:
 
 
 toolbox = base.Toolbox()
@@ -593,7 +621,7 @@ if isnotebook():
 #     * elapsed_time - store elapsed time for each generation.
 #     * global_fitness - store best global fitness value for comparison.
 
-# In[16]:
+# In[ ]:
 
 
 random.seed(100)
@@ -677,4 +705,10 @@ for g in range(GEN):
     print(f'   Elapsed time: {datetime.datetime.now()-tstart}')
 
 print(f'   Total elapsed time: {datetime.datetime.now()-tstart_glob}')
+
+
+# In[ ]:
+
+
+
 
