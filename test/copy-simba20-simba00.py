@@ -6,6 +6,9 @@ expnames = []
 expnames += ['PSO_day_omega0.6_npop100_Albdenby_ampMax10.00']
 expnames += ['PSO_day_omega0.6_npop200_Albdenby_ampMax10.00']
 
+expnames += ['PSO_day_omega0.6_npop100_Albisba_ampMax5.00']
+expnames += ['PSO_day_omega0.6_npop200_Albisba_ampMax5.00']
+
 expnames += ['PSO_mon2_omega0.6_npop100_ampMax10.00']
 expnames += ['PSO_mon2_omega0.6_npop200_ampMax10.00']
 expnames += ['PSO_mon2_omega0.6_npop100_Albdenby_ampMax10.00']
@@ -13,6 +16,10 @@ expnames += ['PSO_mon2_omega0.6_npop200_Albdenby_ampMax10.00']
 
 expnames += ['PSO_mon2_omega0.6_npop100_Albisba_ampMax10.00']
 expnames += ['PSO_mon2_omega0.6_npop200_Albisba_ampMax10.00']
+expnames += ['PSO_mon2_omega0.7_npop100_Albisba_ampMax10.00']
+expnames += ['PSO_mon2_omega0.7_npop200_Albisba_ampMax10.00']
+expnames += ['PSO_mon2_omega0.8_npop100_Albisba_ampMax10.00']
+expnames += ['PSO_mon2_omega0.8_npop200_Albisba_ampMax10.00']
 
 if 1:
     SRC_DIR = os.path.abspath(f'./data')
