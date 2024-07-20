@@ -71,8 +71,13 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 
 	this->Param->albi = 0.07;
 	this->Param->albl = 0.15;
-	this->Param->tmin = -999;
+
+	/* for slater's albedo scheme 
+	Use tmin with -10 C noted in Slater's 1998 paper.
+	*/
+	this->Param->tmin = 273.15-10;
 	this->Param->tmax = 273.15;
+
 	this->Param->hcrit = 0.028;
 	this->Param->rcrit = 0.79;
 	this->Param->amp = DoubleVector(nx,3.5);
@@ -220,7 +225,7 @@ double SEMIC::Albedo_Slater(double tsurf, double tmin, double tmax, double alb_s
 
 	alb_smax - maximum snow albedo (unit: none)
 	alb_smin - minimum snow albedo (unit: none)
-	tmin - minimum temperature (unit: K )
+	tmin - minimum temperature (unit: K)
 	tmax - maximum temperature (unit: K)
 
 	Returns.
