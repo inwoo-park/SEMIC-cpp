@@ -16,6 +16,12 @@ __version__ = '0.1'
 copt = {'linux':[]}
 lopt = {'linux':[]}
 
+# OpenMP flags depending on the compiler
+if sys.platform == "win32":
+    omp_flags = ['/openmp']
+else:
+    omp_flags = ['-fopenmp']
+
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
     The purpose of this class is to postpone importing pybind11
@@ -29,11 +35,15 @@ ext_modules = [
             'pyseb.libpysemic', # install libpysemic in "pyseb" directory.
             ['src/libpysemic.cpp','src/SurfaceEnergyBalance.cpp'],
             define_macros=[('VERSION_INFO',__version__)],
+            extra_compile_args=omp_flags,
+            extra_link_args=omp_flags,
         ),
         Pybind11Extension(
-            'pyseb.example', # install libpysemic in "pyseb" directory.
-            ['src/example.cpp'],
+            'pyseb.libexample', # install libpysemic in "pyseb" directory.
+            ['src/libexample.cpp'],
             define_macros=[('VERSION_INFO',__version__)],
+            extra_compile_args=omp_flags,
+            extra_link_args=omp_flags,
         ),
         ]
 # ext_modules = [
