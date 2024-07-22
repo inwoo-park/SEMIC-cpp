@@ -74,6 +74,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("qmr",&SEMIC::qmr)
 		.def_readwrite("qmr_res",&SEMIC::qmr_res)
 		.def_readwrite("verbose",&SEMIC::verbose)
+		.def_readwrite("num_threads",&SEMIC::num_threads)
 		.def("Initialize",&SEMIC::Initialize)
 		.def("Display",&SEMIC::Display)
 		.def("Albedo_Slater",&SEMIC::Albedo_Slater)
@@ -82,5 +83,8 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("LongwaveRadiationUp",&SEMIC::LongwaveRadiationUp)
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
-		.def("RunEnergyAndMassBalance",&SEMIC::RunEnergyAndMassBalance);
+		.def("RunEnergyAndMassBalance",&SEMIC::RunEnergyAndMassBalance)
+		.def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
+		.def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
+		.def("GetOpenmpThreads", &SEMIC::GetOpenmpThreads);
 }

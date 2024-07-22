@@ -75,6 +75,8 @@ class SEMIC{ /* {{{ */
 		DoubleVector subl;
 		DoubleVector evap;
 
+		int num_threads; /* set number of cpus for openmp*/
+
 		bool verbose; /* show process */
 
 		/* }}} */
@@ -105,7 +107,12 @@ class SEMIC{ /* {{{ */
 
 		/* Go Solve!*/
 		void  	RunEnergyBalance();
-		void		RunMassBalance();
-		void		RunEnergyAndMassBalance();
+		void	RunMassBalance();
+		void	RunEnergyAndMassBalance();
+
+		/* Set openmp environment. */
+		void 	SetOpenmpThreads();
+		void 	SetOpenmpThreads(int ncpus);
+		int 	GetOpenmpThreads();
 }; /* }}} */
 #endif

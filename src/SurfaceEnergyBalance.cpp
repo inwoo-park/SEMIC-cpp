@@ -9,6 +9,9 @@ SEMIC::SEMIC(void){ /*{{{*/
 
 	this->verbose = true;
 
+	this->num_threads = 1; /* use single cpus */
+	this->SetOpenmpThreads(1); /* default setting with single cpu usage.*/
+
 	this->InitializeParameters();
 } /*}}}*/
 SEMIC::~SEMIC(void){ /*{{{*/
@@ -104,6 +107,7 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
 
+	#pragma omp parallel for
 	for (int i=0; i < this->nx; i++)
 		this->shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
 } /* }}} */
@@ -139,6 +143,7 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*
 
 	if (this->verbose) cout << "calculate latent heat flux\n";
 
+	#pragma omp parallel for
 	for (i=0; i < nx; i++){
 		if (this->tsurf[i] < T0){
 			sat_vaporP[i] = this->ei_sat(this->tsurf[i]);
@@ -335,25 +340,25 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	#pragma omp parallel for
 	for (i=0; i<nx; i++)
 		this->subl[i] = this->subl[i]/RHOW;
-
+	
 	/* 3. Surface physics: long-wave radiation */
 	assert(this->lwup.size() == nx);
 	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	this->LongwaveRadiationUp();
 
-	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
-	if (this->verbose) cout << "   step4: calculate surface energy balance\n";
-	#pragma omp parallel for
-	for (i=0; i<nx; i++){
-		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
-	}
-
-	/* 5. Update surface temperature acoording to surface energy balancec */
-	if (this->verbose) cout << "   step5: update surface temperature\n";
 	assert(this->qmr.size() == nx);
 	assert(this->tsurf.size() == nx);
+	
 	#pragma omp parallel for
-	for (i = 0; i < nx; i++){
+	for (i=0; i<nx; i++){
+		/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
+		if (this->verbose) cout << "   step4: calculate surface energy balance\n";
+	
+		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
+
+		/* 5. Update surface temperature acoording to surface energy balancec */
+		if (this->verbose) cout << "   step5: update surface temperature\n";
+
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
 		this->tsurf[i] = this->tsurf[i] + qsb[i]*this->Param->tsticsub / this->Param->ceff;
 		/* store residual energy for subfreezing tsurf over ice and thick snow cover in qmr for later use in mass balance */
@@ -361,12 +366,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 			this->qmr[i] = (this->tsurf[i]-T0) * this->Param->ceff / this->Param->tsticsub;
 			this->tsurf[i] = T0;
 		}
-	}
 
-	/* 6. Update 2-m air temperature over ice sheet */
-	if (this->verbose) cout << "   step6: update 2-air temperature\n";
-	#pragma omp parallel for
-	for (i = 0; i < nx; i++){
+		/* 6. Update 2-m air temperature over ice sheet */
+		if (this->verbose) cout << "   step6: update 2-air temperature\n";
 		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
 		}
@@ -585,3 +587,21 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	if (this->verbose) cout << "Run Mass Balance\n";
 	this->RunMassBalance();
 } /* }}} */
+
+void SEMIC::SetOpenmpThreads(void){ /* {{{ */ 
+	omp_set_num_threads(this->num_threads);
+} /* }}} */
+void SEMIC::SetOpenmpThreads(int ncpus){ /* {{{ */
+	omp_set_num_threads(ncpus);
+} /* }}} */
+int SEMIC::GetOpenmpThreads(void){ /* {{{ */ 
+	int nthreads = 1;
+	#pragma omp parallel
+	{
+		#pragma omp single
+		{
+			nthreads = omp_get_num_threads();
+		}
+	}
+	return nthreads;
+} /* }}}*/

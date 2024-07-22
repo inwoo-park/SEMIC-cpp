@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import pybind11
+import sys
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, find_packages, Extension
 # from setuptools.command.build_ext import build_ext
@@ -46,14 +47,6 @@ ext_modules = [
             extra_link_args=omp_flags,
         ),
         ]
-# ext_modules = [
-#     Extension('pseb.libpysemic',  # Package name and module name
-#         ['src/pySEMIC.cpp','src/SurfaceEnergyBalance.cpp'],
-#         include_dirs=[
-#             get_pybind_include(),
-#         ],
-#         language='c++')
-# ]
 
 setup(
         name='pyseb',

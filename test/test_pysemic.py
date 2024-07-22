@@ -117,10 +117,22 @@ def test_tqdm(): # {{{
         print(i)
     # }}}
 
+def test_openmp(): # {{{
+    semic = pyseb.SEMIC()
+    print(f'Without settings...')
+    print(f'num threads = {semic.GetOpenmpThreads()}')
+
+    print(f'With setting nproc = 8.')
+    semic.num_threads = 8
+    semic.SetOpenmpThreads(8)
+    print(f'num threads = {semic.GetOpenmpThreads()}')
+    # }}}
+
 if __name__ == '__main__':
     print('   Do main')
     #test_load()
     #test_load_parameters()
     #test_LongwaveRadiation()
     # test_RunSemic()
-    test_tqdm()
+    # test_tqdm()
+    test_openmp()
