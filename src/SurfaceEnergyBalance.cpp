@@ -107,7 +107,7 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
 
-	#pragma omp parallel for
+	// #pragma omp parallel for schedule(dynamic)
 	for (int i=0; i < this->nx; i++)
 		this->shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
 } /* }}} */
@@ -143,7 +143,7 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*
 
 	if (this->verbose) cout << "calculate latent heat flux\n";
 
-	#pragma omp parallel for
+	// #pragma omp parallel for schedule(dynamic)
 	for (i=0; i < nx; i++){
 		if (this->tsurf[i] < T0){
 			sat_vaporP[i] = this->ei_sat(this->tsurf[i]);
@@ -200,6 +200,11 @@ void SEMIC::TestReturnVector(vector<double> &tmp){ /*{{{*/
 
 void SEMIC::DiurnalCycle(double tmean, double amp, double &above, double &below){ /*{{{*/
 	/* semic-f90: diurnal_cycle
+
+	Out
+	---
+	above: double - above temperataure (unit: K)
+	below: double - below temperature (unit: K)
 	*/
 	double tmp1, tmp2; /* temporal variable */
 	
@@ -337,7 +342,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	fill(this->lhf.begin(), this->lhf.end(), 0.0);
 	this->LatentHeatFlux(this->Param, this->Const);
 
-	#pragma omp parallel for
+	#pragma omp parallel for schedule(dynamic)
 	for (i=0; i<nx; i++)
 		this->subl[i] = this->subl[i]/RHOW;
 	
@@ -349,15 +354,30 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	assert(this->qmr.size() == nx);
 	assert(this->tsurf.size() == nx);
 	
-	#pragma omp parallel for
-	for (i=0; i<nx; i++){
-		/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
-		if (this->verbose) cout << "   step4: calculate surface energy balance\n";
+	#pragma omp parallel
+	{
 	
-		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
+	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
+	#pragma omp master
+	{
+	if (this->verbose)
+		cout << "   step4: calculate surface energy balance\n";
+	}
 
-		/* 5. Update surface temperature acoording to surface energy balancec */
-		if (this->verbose) cout << "   step5: update surface temperature\n";
+	#pragma omp for schedule(dynamic)
+	for (i=0; i<nx; i++){
+		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
+	}
+
+	/* 5. Update surface temperature acoording to surface energy balancec */
+	#pragma omp master
+	{
+	if (this->verbose)
+		cout << "   step5: update surface temperature\n";
+	}
+
+	#pragma omp for schedule(dynamic)
+	for (int i=0; i<nx; i++){
 
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
 		this->tsurf[i] = this->tsurf[i] + qsb[i]*this->Param->tsticsub / this->Param->ceff;
@@ -366,12 +386,22 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 			this->qmr[i] = (this->tsurf[i]-T0) * this->Param->ceff / this->Param->tsticsub;
 			this->tsurf[i] = T0;
 		}
+	}
 
-		/* 6. Update 2-m air temperature over ice sheet */
-		if (this->verbose) cout << "   step6: update 2-air temperature\n";
+	/* 6. Update 2-m air temperature over ice sheet */
+	#pragma omp master
+	{
+	if (this->verbose)
+		cout << "   step6: update 2-air temperature\n";
+	}
+
+	#pragma omp for schedule(dynamic)
+	for (int i=0; i<nx; i++){
 		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
 		}
+	}
+
 	}
 
 	if (this->verbose) cout << "   Finalize clear memory\n";	
@@ -381,7 +411,6 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 void SEMIC::RunMassBalance(){/*{{{*/
 	/* Calculate mass balance
 	*/
-	int i;
 	int nx = this->nx;
 	DoubleVector above(nx,0.0), below(nx,0.0);
 	DoubleVector qmelt(nx,0.0), qcold(nx,0.0);
@@ -403,13 +432,28 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 	if (this->verbose) cout << "   RunMassBalance\n";
 
-	#pragma omp parallel for
-	for (i=0; i<nx; i++){
+	#pragma omp parallel /* start omp parallel*/
+	{
+
+	#pragma omp for schedule(dynamic)
+	for (int i=0; i<nx; i++){
 		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
-		if (this->verbose) cout << "   step1: calculate above/below freezing temperature\n";
+		if (i==0 && this->verbose){
+			cout << "   step1: calculate above/below freezing temperature\n";
+			cout << this->tsurf[i] << endl;
+			cout << this->qmr[i] << endl;
+			cout << this->Param->amp[i] << endl;
+		}
 		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic,
 					this->Param->amp[i], above[i], below[i]);
+		
+		if (i==0 && this->verbose){
+			cout << "above temprature " << above[i] << endl;
+			cout << "below temprature " << below[i] << endl;
+		}
 
+		if (i==0 && this->verbose)
+			cout << "   set qmr = 0.\n";
 		this->qmr[i] = 0.;
 	
 		if (this->mask[i] >= 1){
@@ -424,7 +468,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		}
 
 		/* 4. Ablation: melt (water m s-1); potential melt resulting from available melt energy*/
-		if (this->verbose) cout << "   step4: calculate ablation.\n";
+		if (i==0 && this->verbose) cout << "   step4: calculate ablation.\n";
 
 		/* potential melt */
 		this->melt[i] = qmelt[i]/(RHOW * CLM);
@@ -444,7 +488,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		}
 
 		/* 5. Refreezing (m s-1) as fraction of melt (increase with snow height) */
-		if (this->verbose) cout << "   step5: refreezing.\n";
+		if (i==0 && this->verbose) cout << "   step5: refreezing.\n";
 		double f_rz = this->Param->rcrit; /* get freezing parameter*/
 
 		this->refr[i] = qcold[i] / (RHOW * CLM);
@@ -464,15 +508,16 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		this->qmr[i] = this->qmr[i] - (1.0 - f_rz) * this->refr[i] * RHOW *CLM;
 
 		/* 6. Runoff */
-		if (this->verbose) cout << "   step6: runoff\n";
+		if (i==0 && this->verbose) cout << "   step6: runoff\n";
 		this->runoff[i] = this->melt[i] + this->rf[i] - refrozen_rain[i];
 
 		/* 7. Accumulation: sum of all incoming solid water (just diagnostic here) */
-		if (this->verbose) cout << "   step7: accumulation\n";
+		if (i==0 && this->verbose) cout << "   step7: accumulation\n";
 		this->acc[i] = this->sf[i] - this->subl[i] + this->refr[i];
 
 		/* 8. Surface mass balancee of snow */
-		if (this->verbose) cout << "   step8: surface mass balance of snow\n";
+		if (i==0 && this->verbose)
+			cout << "   step8: surface mass balance of snow\n";
 		this->smb_snow[i] = this->sf[i] - this->subl[i] - this->melted_snow[i] + refrozen_snow[i];
 
 		if (this->mask[i] == 0){
@@ -484,7 +529,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		}
 
 		/* 10. Relax snow height to maximum (e.g., 5m) */
-		if (this->verbose) cout << "   step10: relax snow height\n";
+		if (i==0 && this->verbose) cout << "   step10: relax snow height\n";
 		double snow_to_ice;
 
 		snow_to_ice = max(0.0, this->hsnow[i] - HSMAX);
@@ -499,7 +544,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		this->hice[i] = this->hice[i] + this->smb_ice[i] * this->Param->tstic;
 
 		/* 11. Total surface mass balance */
-		if (this->verbose) cout << "   step11: total surface mass balance\n";
+		if (i==0 && this->verbose)
+			cout << "   step11: total surface mass balance\n";
 		snow_to_ice = snow_to_ice_input[i];
 		if (this->mask[i] == 2){
 			this->smb[i] = this->smb_snow[i] + this->smb_ice[i] - snow_to_ice/this->Param->tstic;
@@ -509,7 +555,9 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		}
 
 		/* 12. Update snow albedo*/
-		if (this->verbose) cout << "   step12: update snow albedo\n";
+		if (i==0 && this->verbose)
+			cout << "   step12: update snow albedo\n";
+		
 		double f_alb;
 		double albi=this->Param->albi;
 		double albl=this->Param->albl;
@@ -557,6 +605,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			this->qmr_res[i] = this->qmr[i];
 	}
 
+	} /* end of pragma omp*/
+
 	/* Clear memory */
 	below.clear();
 	above.clear();
@@ -573,6 +623,13 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 
 	/* sub time stepping */
 	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
+
+	/* Check # of threads */
+	#pragma omp parallel
+	{
+		#pragma omp master
+		cout << "Number of threads = " << omp_get_num_threads() << endl;
+	}
 
 	if (this->verbose) cout << "Run Energy Balance\n";
 	for (i=0; i < this->n_ksub; i++){

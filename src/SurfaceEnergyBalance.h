@@ -126,6 +126,7 @@ class SemicForcings{
 		/* set variables */
 		DoubleMatrix sf;     /* snowfall [w.e. m s-1] */
 		DoubleMatrix rf;     /* rainfall [w.e. m s-1] */
+		DoubleMatrix t2m;    /* surface 2-m air temperature [unit: K]*/
 		DoubleMatrix sp;     /* Surface pressure [Pa] */
 		DoubleMatrix lwd;    /* Long-wave radiation downward direction [W m-2] */
 		DoubleMatrix swd;    /* Short-wave radiation downward direction [W m-2] */
@@ -135,7 +136,7 @@ class SemicForcings{
 
 		/* Initialize constructor and destructor. */
 		SemicForcings(int nx, int ntime)
-        : sf(nx, ntime), rf(nx, ntime), sp(nx, ntime),
+        : sf(nx, ntime), rf(nx, ntime), t2m(nx, ntime), sp(nx, ntime),
           lwd(nx, ntime), swd(nx, ntime), wind(nx, ntime),
           rhoa(nx, ntime), qq(nx, ntime) {}
 		// ~SemicForcings(void);

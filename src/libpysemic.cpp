@@ -50,10 +50,13 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("ntime",&SemicForcings::ntime)
 		.def_readwrite("sf",&SemicForcings::sf)
 		.def_readwrite("rf",&SemicForcings::rf)
+        .def_readwrite("t2m",&SemicForcings::t2m)
 		.def_readwrite("sp",&SemicForcings::sp)
 		.def_readwrite("lwd",&SemicForcings::lwd)
 		.def_readwrite("swd",&SemicForcings::swd)
-		.def_readwrite("wind",&SemicForcings::wind);		
+		.def_readwrite("wind",&SemicForcings::wind)
+        .def_readwrite("rhoa",&SemicForcings::rhoa)
+        .def_readwrite("qq",&SemicForcings::qq);	
 
 	py::class_<SEMIC>(m, "SEMIC")
 	   .def(py::init<>())
