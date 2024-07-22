@@ -567,17 +567,12 @@ void SEMIC::RunMassBalance(){/*{{{*/
 }/*}}}*/
 
 void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
-	/* Run 
+	/* Run both energy and mass balance
 	*/
 	int i, nx=this->nx;
 
 	/* sub time stepping */
 	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
-
-	//if (this->verbose){
-	//	cout << "n_ksub value = " << this->n_ksub << endl;;
-	//	cout << "tsticsub value = " << this->Param->tsticsub << endl;
-	//}
 
 	if (this->verbose) cout << "Run Energy Balance\n";
 	for (i=0; i < this->n_ksub; i++){

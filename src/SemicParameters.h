@@ -2,6 +2,7 @@
 #define SEMICPARAMETERS_H
 
 #include "iostream"
+#include "array"
 #include "vector"
 
 /* Type definition */
@@ -60,4 +61,5 @@ public:
 		cout << "rhow   " << this->rhow << " density of water (unit: kg m-3)" << endl;
 	};
 }; /* }}}*/
+
 #endif

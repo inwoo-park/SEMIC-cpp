@@ -15,6 +15,20 @@ def test_load(): # {{{
     print(semic.sf)
     # }}}
 
+def test_load2d(): # {{{
+    nx = 10
+    ntime = 365
+    semic = pyseb.libpysemic.SEMIC()
+    semic.Initialize(nx)
+    semic.Display()
+    print(semic.sf)
+
+    ONES = np.ones((nx,ntime))
+    semic.sf = 10*ONES
+    print(semic.sf)
+    
+    # }}}
+
 def test_load_parameters(): # {{{
     semic = pyseb.SEMIC()
     param = semic.Param
@@ -128,11 +142,45 @@ def test_openmp(): # {{{
     print(f'num threads = {semic.GetOpenmpThreads()}')
     # }}}
 
+def test_SemicForcings(): #{{{
+    a = 100*np.ones((10,365))
+    forcings = pyseb.SemicForcings(10,365)
+
+    forcings.sf[:] = a[:]
+
+    # print(forcings.sf[:])
+
+    # return shape
+    print(np.shape(forcings.sf[:]))
+    # }}}
+
+def test_DoubleMatrix(): # {{{
+    # initialize 2d array.
+    b = 10*np.ones((10,2))
+    c = 100*np.ones((10,))
+    a = pyseb.DoubleMatrix(b)
+
+    # get values.
+    print(f'a[:,0] = {a[:,0]}')
+    print(f'a[0,:] = {a[0,:]}')
+    print(f'a[:] = {a[:]}')
+    
+    # set values
+    a[:,0] = c[:]
+    print(a[:,0], a[:,1])
+
+    # replace all values.
+    a[:] = b[:]
+    # }}}
+
 if __name__ == '__main__':
     print('   Do main')
     #test_load()
+    # test_load2d()
     #test_load_parameters()
     #test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
-    test_openmp()
+    test_SemicForcings()
+    # test_openmp()
+    # test_DoubleMatrix()
