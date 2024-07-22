@@ -127,7 +127,7 @@ public:
             std::memcpy(data[i], ptr + i * ncols, ncols * sizeof(double));
         }
     }
-#endfi
+#endif
 
 private:
     void allocateMemory() {
