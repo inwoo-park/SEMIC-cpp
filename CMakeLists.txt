@@ -16,11 +16,17 @@ endif()
 set(CMAKE_CXX_STANDARD 11)
 set(PYSEMIC libpysemic)
 
+# Initialize SEMIC library for main file
+add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
+ src/SurfaceEnergyBalance.h
+ src/SemicArray.h
+ src/SemicParameters.h)
+
 option(USE_OPENMP "Use OpenMP for parallelization" OFF)
 
 # find openmp package
 if (USE_OPENMP)
-	find_package(OpenMP)
+	find_package(OpenMP REQUIRED)
 	if (NOT OpenMP_CXX_FOUND)
 		message(WARNING "OpenMP not found, proceeding without it.")
 	endif()
@@ -38,15 +44,11 @@ endif()
 pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
 if (USE_OPENMP AND OpenMP_CXX_FOUND)
 	target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
+	target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)
 endif()
 
 # pybind11_add_module(MyLib src/pybind.cpp)
 #target_compile_definitions(pySEMIC PRIVATE)
-
-# Initialize SEMIC library for main file
-add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
- src/SurfaceEnergyBalance.h
- src/SemicParameters.h)
 
 # Initialize SEMIC
 add_executable(SEMIC src/main.cpp)
