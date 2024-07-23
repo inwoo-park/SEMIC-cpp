@@ -8,11 +8,11 @@ def test_load(): # {{{
     semic = pyseb.libpysemic.SEMIC()
     semic.Initialize(nx)
     semic.Display()
-    print(semic.sf)
+    # print(semic.sf)
 
     ONES = np.ones((nx,))
     semic.sf = 10*ONES
-    print(semic.sf)
+    # print(semic.sf)
     # }}}
 
 def test_load2d(): # {{{
@@ -173,6 +173,103 @@ def test_DoubleMatrix(): # {{{
     a[:] = b[:]
     # }}}
 
+def test_SemicForcings_ERA5(): # {{{
+    import tqdm
+    import xarray, netCDF4
+    import scipy.io
+    import datetime, pandas
+
+    # move to specific directory
+    _dirname = os.path.dirname(__file__)
+    os.chdir(_dirname)
+
+    force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
+    ntime, nx = force['t2m'].shape
+    # nx = 1000 # only 100 nodes are required
+
+    print(f'   shape of t2m = ({nx}, {ntime})')
+
+    semic_f = pyseb.SemicForcings(nx, ntime)
+    sf  = force['msr'].T[:nx,:]
+    rf  = force['mtpr'].T[:nx,:] - force['msr'].T[:nx,:]
+    t2m = force['t2m'].T[:nx,:]
+    lwd = force['msdwlwrf'].T[:nx,:]
+    swd = force['msdwswrf'].T[:nx,:]
+    sp  = force['sp'].T[:nx,:]
+    wind= force['wind2m'].T[:nx,:]
+    
+    semic_f.rf = pyseb.DoubleMatrix(rf)
+    semic_f.sf = pyseb.DoubleMatrix(sf)
+    semic_f.t2m = pyseb.DoubleMatrix(t2m)
+    semic_f.lwd = pyseb.DoubleMatrix(lwd)
+    semic_f.swd = pyseb.DoubleMatrix(swd)
+    semic_f.sp = pyseb.DoubleMatrix(sp)
+    semic_f.wind = pyseb.DoubleMatrix(wind)
+
+    # set air density
+    qq = pyseb.utils.Dewpoint2SpecificHumidity(force['d2m'].T[:nx,:], force['sp'].T[:nx,:])
+    rhoa = pyseb.utils.AirDensityFromSpecificHumidity(force['sp'].T[:nx,:], force['t2m'].T[:nx,:], qq)
+    qq = qq
+    rhoa = rhoa
+    semic_f.qq  = pyseb.DoubleMatrix(qq)
+    semic_f.rhoa= pyseb.DoubleMatrix(rhoa)
+
+    print(f"   Show information.")
+    # print(f"   shape of qq = {np.shape(semic_f.qq[:])}")
+
+    # now calculate surface and enery balance
+    semic = pyseb.SEMIC()
+    semic.Initialize(nx)
+    
+    ONES = np.ones((nx,))
+    semic.tsurf = (273.15-10)*ONES.copy()
+    semic.mask  = 2*np.ones((nx,),dtype=int)
+    semic.hsnow = 5*ONES.copy()
+    semic.hice  = 10*ONES.copy()
+    semic.alb   = 0.8*ONES.copy()
+    semic.qmr   = 0.0*ONES.copy()
+
+    # set initial parameter
+    semic.Param.amp = 2.0*np.ones((nx,))
+
+    # initialize logger
+    df = pandas.DataFrame(columns=['num_thread','time'])
+    
+    semic.verbose = False
+
+
+    for num_threads in [1, 2, 3, 4, 5, 6, 8, 10]:
+        semic.num_threads = num_threads
+        semic.SetOpenmpThreads()
+        print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
+        print(f'   Run energy balance!')
+
+        tstart = datetime.datetime.now()
+        for _ in range(1):
+            for i in range(ntime):
+                semic.sf    = sf[:,i]
+                semic.rf    = rf[:,i]
+                semic.t2m   = t2m[:,i]
+                semic.lwd   = lwd[:,i]
+                semic.swd   = swd[:,i]
+                semic.sp    = sp[:,i]
+                semic.wind  = wind[:,i]
+                semic.rhoa  = rhoa[:,i]
+                semic.qq    = qq[:,i]
+                
+                semic.RunEnergyAndMassBalance()
+        elp_time = datetime.datetime.now()-tstart
+        print(f'Elapsed time = {elp_time}')
+
+        df.loc[len(df)] = {'num_thread':num_threads,
+                           'time':elp_time}
+
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.plot(df['num_thread'], df['time'])    
+    plt.show()
+    # }}}
+
 if __name__ == '__main__':
     print('   Do main')
     #test_load()
@@ -181,6 +278,7 @@ if __name__ == '__main__':
     #test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
-    test_SemicForcings()
+    # test_SemicForcings()
     # test_openmp()
     # test_DoubleMatrix()
+    test_SemicForcings_ERA5()
