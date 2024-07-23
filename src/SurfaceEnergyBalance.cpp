@@ -625,11 +625,13 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
 	/* Check # of threads */
+	/*
 	#pragma omp parallel
 	{
 		#pragma omp master
 		cout << "Number of threads = " << omp_get_num_threads() << endl;
 	}
+	*/
 
 	if (this->verbose) cout << "Run Energy Balance\n";
 	for (i=0; i < this->n_ksub; i++){

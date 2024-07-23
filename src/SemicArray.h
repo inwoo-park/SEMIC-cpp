@@ -5,15 +5,18 @@
 #include <sstream>
 #include <cstring> // for std::memcpy
 
-#ifdef __has_include
-#  if __has_include("pybind11/pybind11.h")
+//#ifdef __has_include
+//#  if __has_include("pybind11/pybind11.h")
+
+#ifdef HAS_PYBIND11
 #    include "pybind11/pybind11.h"
 #    include "pybind11/numpy.h"
 #    include "pybind11/stl.h"
-#    define HAS_PYBIND11
+//#    define HAS_PYBIND11
      namespace py = pybind11;
-#  endif
 #endif
+//#  endif
+//#endif
 
 using namespace std;
 

@@ -3,7 +3,7 @@ import pybind11
 import sys
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, find_packages, Extension
-# from setuptools.command.build_ext import build_ext
+from distutils.sysconfig import get_config_vars
  
 '''
 
@@ -18,10 +18,11 @@ copt = {'linux':[]}
 lopt = {'linux':[]}
 
 # OpenMP flags depending on the compiler
+extra_compile_args = ['-std=c++11']
 if sys.platform == "win32":
-    omp_flags = ['/openmp']
+    extra_compile_args += ['/openmp']
 else:
-    omp_flags = ['-fopenmp']
+    extra_compile_args += ['-fopenmp']
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -31,20 +32,21 @@ class get_pybind_include(object):
 
     def __str__(self):
         return pybind11.get_include()
+
 ext_modules = [
         Pybind11Extension(
             'pyseb.libpysemic', # install libpysemic in "pyseb" directory.
             ['src/libpysemic.cpp','src/SurfaceEnergyBalance.cpp'],
-            define_macros=[('VERSION_INFO',__version__)],
-            extra_compile_args=omp_flags,
-            extra_link_args=omp_flags,
+            define_macros=[('VERSION_INFO',__version__), ('HAS_PYBIND11',1)],
+            extra_compile_args=extra_compile_args,
+            extra_link_args=extra_compile_args,
         ),
         Pybind11Extension(
             'pyseb.libexample', # install libpysemic in "pyseb" directory.
             ['src/libexample.cpp'],
-            define_macros=[('VERSION_INFO',__version__)],
-            extra_compile_args=omp_flags,
-            extra_link_args=omp_flags,
+            define_macros=[('VERSION_INFO',__version__), ('HAS_PYBIND11', 1)],
+            extra_compile_args=extra_compile_args,
+            extra_link_args=extra_compile_args,
         ),
         ]
 
