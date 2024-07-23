@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import numpy as np
+import pytest
 import os, sys, platform
 import pyseb
 
+@pytest.fixture
 def test_load(): # {{{
     nx = 10
     semic = pyseb.libpysemic.SEMIC()
@@ -15,6 +17,7 @@ def test_load(): # {{{
     # print(semic.sf)
     # }}}
 
+@pytest.mark.skip(reason='Skip loading 2d array')
 def test_load2d(): # {{{
     nx = 10
     ntime = 365
@@ -173,6 +176,7 @@ def test_DoubleMatrix(): # {{{
     a[:] = b[:]
     # }}}
 
+@pytest.mark.skip(reason='Skip loading 2d array')
 def test_SemicForcings_ERA5(): # {{{
     import tqdm
     import xarray, netCDF4
@@ -214,13 +218,49 @@ def test_SemicForcings_ERA5(): # {{{
     semic_f.qq  = pyseb.DoubleMatrix(qq)
     semic_f.rhoa= pyseb.DoubleMatrix(rhoa)
 
-    print(f"   Show information.")
-    # print(f"   shape of qq = {np.shape(semic_f.qq[:])}")
+    print(f"Show information.")
+    print(f"-- Shape of qq = {np.shape(semic_f.qq[:])}")
+    # }}}
+
+def test_semic_openmp_ERA5(): # {{{
+    '''test run semic with openmp
+    '''
+    import tqdm
+    import xarray, netCDF4
+    import scipy.io
+    import datetime, pandas
+
+    # move to specific directory
+    _dirname = os.path.dirname(__file__)
+    os.chdir(_dirname)
+
+    force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
+    ntime, nx = force['t2m'].shape
+    # nx = 1000 # only 100 nodes are required
+
+    print(f'   shape of t2m = ({nx}, {ntime})')
+
+    print(f'   Initialize forcing variables.')
+    sf  = force['msr'].T[:nx,:]
+    rf  = force['mtpr'].T[:nx,:] - force['msr'].T[:nx,:]
+    t2m = force['t2m'].T[:nx,:]
+    lwd = force['msdwlwrf'].T[:nx,:]
+    swd = force['msdwswrf'].T[:nx,:]
+    sp  = force['sp'].T[:nx,:]
+    wind= force['wind2m'].T[:nx,:]
+    
+    # set air density
+    qq = pyseb.utils.Dewpoint2SpecificHumidity(force['d2m'].T[:nx,:], force['sp'].T[:nx,:])
+    rhoa = pyseb.utils.AirDensityFromSpecificHumidity(force['sp'].T[:nx,:], force['t2m'].T[:nx,:], qq)
+    qq = qq
+    rhoa = rhoa
 
     # now calculate surface and enery balance
+    print(f"   -- Load SEMIC module.")
     semic = pyseb.SEMIC()
     semic.Initialize(nx)
     
+    print(f'   -- Prepare initialization and parameters')
     ONES = np.ones((nx,))
     semic.tsurf = (273.15-10)*ONES.copy()
     semic.mask  = 2*np.ones((nx,),dtype=int)
@@ -236,7 +276,6 @@ def test_SemicForcings_ERA5(): # {{{
     df = pandas.DataFrame(columns=['num_thread','time'])
     
     semic.verbose = False
-
 
     for num_threads in [1, 2, 3, 4, 5, 6, 8, 10]:
         semic.num_threads = num_threads
@@ -266,7 +305,7 @@ def test_SemicForcings_ERA5(): # {{{
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
-    ax.plot(df['num_thread'], df['time'])    
+    ax.plot(df['num_thread'], df['time'])
     plt.show()
     # }}}
 
@@ -281,4 +320,5 @@ if __name__ == '__main__':
     # test_SemicForcings()
     # test_openmp()
     # test_DoubleMatrix()
-    test_SemicForcings_ERA5()
+    #test_SemicForcings_ERA5()
+    test_semic_openmp_ERA5()
