@@ -3,8 +3,8 @@
 #include "pybind11/numpy.h"
 
 #include "SemicParameters.h"
-#include "SurfaceEnergyBalance.h"
 #include "SemicArray.h"
+#include "SurfaceEnergyBalance.h"
 
 namespace py = pybind11;
 
@@ -107,21 +107,25 @@ PYBIND11_MODULE(libpysemic, m){
 
 	py::class_<DoubleMatrix>(m, "DoubleMatrix")
         .def(py::init<size_t, size_t>())
-		.def(py::init<py::array_t<double>>())
+#ifdef HAS_PYBIND11
+		  .def(py::init<py::array_t<double>>())
+#endif
         .def("rows", &DoubleMatrix::rows)
         .def("cols", &DoubleMatrix::cols)
         .def("__call__", static_cast<const double& (DoubleMatrix::*)(size_t, size_t) const>(&DoubleMatrix::operator()))
         .def("__call__", static_cast<double& (DoubleMatrix::*)(size_t, size_t)>(&DoubleMatrix::operator()))
         .def("__str__", &DoubleMatrix::toString)
         .def("__repr__", &DoubleMatrix::toString)
-		.def("to_numpy", &DoubleMatrix::toNumpy)
+#ifdef HAS_PYBIND11
+		  .def("to_numpy", &DoubleMatrix::toNumpy)
+#endif
         .def("__getitem__", [](const DoubleMatrix& m, std::pair<size_t, size_t> index) {
             return m(index.first, index.second);
         })
         .def("__setitem__", [](DoubleMatrix& m, std::pair<size_t, size_t> index, double value) {
             m(index.first, index.second) = value;
         })
-		.def("__getitem__", [](const DoubleMatrix& m, py::tuple index) -> py::object {
+		  .def("__getitem__", [](const DoubleMatrix& m, py::tuple index) -> py::object {
             if (index.size() != 2) throw std::invalid_argument("Index must be a tuple of size 2");
 
             py::object row_obj = index[0], col_obj = index[1];
@@ -203,6 +207,16 @@ PYBIND11_MODULE(libpysemic, m){
                 throw std::invalid_argument("Only row or column slice assignment is supported");
             }
         })
+#ifdef HAS_PYBIND11
+        .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::object value) {
+            if (py::isinstance<py::array_t<double>>(value)) {
+                py::array_t<double> array = value.cast<py::array_t<double>>();
+                m.setMatrix(array);
+            } else {
+                throw std::invalid_argument("Only numpy arrays can be assigned to slices");
+            }
+        })
+#endif
         .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::array_t<double> value) {
             py::ssize_t start, stop, step, slicelength;
             if (!slice.compute(m.rows(), &start, &stop, &step, &slicelength))
@@ -215,14 +229,6 @@ PYBIND11_MODULE(libpysemic, m){
                 for (size_t j = 0; j < m.cols(); ++j) {
                     m(start + i * step, j) = ptr[i * m.cols() + j];
                 }
-            }
-        })
-        .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::object value) {
-            if (py::isinstance<py::array_t<double>>(value)) {
-                py::array_t<double> array = value.cast<py::array_t<double>>();
-                m.setMatrix(array);
-            } else {
-                throw std::invalid_argument("Only numpy arrays can be assigned to slices");
             }
         });
 }
