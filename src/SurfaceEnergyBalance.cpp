@@ -100,9 +100,10 @@ void SEMIC::Display(){ /* {{{ */
 
 void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* {{{ */
 	/* semic-f90: sensible_heat_flux
+	Calculate sensible heat flux.
 
 	*/
-	if (this->verbose) cout << "calculate sensible heat flux\n";
+	// if (this->verbose) cout << "calculate sensible heat flux\n";
 
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
@@ -110,6 +111,19 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 	// #pragma omp parallel for schedule(dynamic)
 	for (int i=0; i < this->nx; i++)
 		this->shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
+} /* }}} */
+
+void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m, double &shf) {/* {{{ */
+	/*
+	Calcaulate sensible heat flux with given variable
+
+	shf - return value: sensible heat flux
+	*/
+	double csh=Param->csh; /* sensible heat exchange coefficient */
+	double cap=Const->cap; /* air specific heat capacity */
+	
+	/* sensible heat flux */
+	shf = csh * cap * rhoa * wind * (tsurf - t2m);
 } /* }}} */
 
 void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*/
@@ -165,6 +179,52 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*
 	}
 } /*}}}*/
 
+void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double sp, double qq, double &evap, double &subl, double &lhf){/*{{{*/
+	/* semic-f90: latent_heat_flux
+	Inputs
+	----------
+	sp   - surface pressure (unit: Pa).
+	wind - wind speed (unit: m s-1)
+
+	Ouputs (returns)
+	------
+	evap    - evapotranspiration
+	subl    - sublimation
+	lhf     - latent heat flux
+	*/
+	double shumidity_sat=0.0; /* Specific humidity */
+	double sat_vaporP=0.0; /* Saturated water vapor pressure */
+
+	double clh=Param->clh;
+	double cls=Const->cls;
+	double clv=Const->clv;
+	
+	// if (this->verbose) cout << "calculate latent heat flux\n";
+	/* Initialize variable */
+	subl = 0.0;
+	lhf  = 0.0;
+	evap = 0.0;
+
+	// #pragma omp parallel for schedule(dynamic)
+	if (tsurf < T0){
+		sat_vaporP = this->ei_sat(tsurf);
+		/* specific humidity at surface (assumed to be saturated) is */
+		shumidity_sat = sat_vaporP * EPSIL /(sat_vaporP*(EPSIL-1.0)+ sp);
+		
+		subl= clh*wind*rhoa*(shumidity_sat - qq);
+		lhf = subl*cls;
+	}
+	else{
+		sat_vaporP = this->ew_sat(tsurf);
+		/* Evaporation, condenstation */
+		/* Specific humidity at surface (assumed to be saturated) */
+		shumidity_sat = sat_vaporP * EPSIL /(sat_vaporP*(EPSIL-1.0) + sp);
+		evap = clh*wind*rhoa*(shumidity_sat - qq);
+		lhf  = evap*clv;
+	}
+} /*}}}*/
+
+
 void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 	/* Calculate upward long-wave radiation with Stefan-Boltzman law
 
@@ -176,6 +236,24 @@ void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 
 	for (int i=0; i < nx; i++)
 		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4.0);
+} /*}}}*/
+
+void SEMIC::LongwaveRadiationUp(double tsurf, double &lwup){ /*{{{*/
+	/* Calculate upward long-wave radiation with Stefan-Boltzman law
+
+		lwup = sigma * T^4
+
+	Inputs
+	------
+	tsurf - surface temperature (unit: K)
+
+	Outputs (returns)
+	-----------------
+	lwup - upward long wave radiation (unit: W m-2)
+	*/
+	// if (this->verbose) cout << "calculate upward long-wave radiation.\n";
+
+	lwup = SIGMA*pow(tsurf, 4.0);
 } /*}}}*/
 
 double SEMIC::SaturateWaterVaporP(double temperature) { /* {{{ */
@@ -331,38 +409,56 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	assert(this->shf.size() == nx);
 	assert(this->lhf.size() == nx);
 
-	if (this->verbose) cout << "   RunEnergyBalance\n";
-	
-	/* 1. Calculate the sensible heat flux */
-	this->SensibleHeatFlux(this->Param, this->Const);
-
-	/* 2. Calculate the latent heat flux */
+	/* Initialize default value */
 	fill(this->subl.begin(), this->subl.end(), 0.0);
 	fill(this->evap.begin(), this->evap.end(), 0.0);
 	fill(this->lhf.begin(), this->lhf.end(), 0.0);
-	this->LatentHeatFlux(this->Param, this->Const);
 
-	#pragma omp parallel for schedule(dynamic)
-	for (i=0; i<nx; i++)
-		this->subl[i] = this->subl[i]/RHOW;
-	
-	/* 3. Surface physics: long-wave radiation */
+	if (this->verbose)
+		cout << "   RunEnergyBalance\n";
+
 	assert(this->lwup.size() == nx);
-	fill(this->lwup.begin(), this->lwup.end(), 0.0);
-	this->LongwaveRadiationUp();
-
 	assert(this->qmr.size() == nx);
 	assert(this->tsurf.size() == nx);
+
+	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	
-	#pragma omp parallel
+	#pragma omp parallel /* Initialize Openmp Parallel*/
 	{
+
+	#pragma omp single
+	if (this->verbose)
+		cout << "   step1: Calculate the sensible heat flux\n";
+	
+	#pragma omp for schedule(dynamic)
+	for (int i=0; i<nx; i++){
+
+		this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i], this->shf[i]);
+	}
+
+	#pragma omp single
+	if (this->verbose)
+		cout << "   step2: Calculate the latent heat flux\n";
+
+	#pragma omp for schedule(dynamic)	
+	for (int i=0; i<nx; i++){
+		this->LatentHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->sp[i], this->qq[i], this->evap[i], this->subl[i], this->lhf[i]);
+
+		this->subl[i] = this->subl[i]/RHOW;
+	}
+	
+	#pragma omp single
+	if (this->verbose)
+		cout << "   step3: Surface physics: long-wave radiation\n";
+	
+	#pragma omp for schedule(dynamic)
+	for (int i=0; i<nx; i++)
+		this->LongwaveRadiationUp(this->tsurf[i], this->lwup[i]);
 	
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
-	#pragma omp master
-	{
+	#pragma omp single
 	if (this->verbose)
 		cout << "   step4: calculate surface energy balance\n";
-	}
 
 	#pragma omp for schedule(dynamic)
 	for (i=0; i<nx; i++){
@@ -370,11 +466,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	}
 
 	/* 5. Update surface temperature acoording to surface energy balancec */
-	#pragma omp master
-	{
+	#pragma omp single
 	if (this->verbose)
 		cout << "   step5: update surface temperature\n";
-	}
 
 	#pragma omp for schedule(dynamic)
 	for (int i=0; i<nx; i++){
@@ -389,11 +483,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	}
 
 	/* 6. Update 2-m air temperature over ice sheet */
-	#pragma omp master
-	{
+	#pragma omp single
 	if (this->verbose)
 		cout << "   step6: update 2-air temperature\n";
-	}
 
 	#pragma omp for schedule(dynamic)
 	for (int i=0; i<nx; i++){
@@ -402,7 +494,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		}
 	}
 
-	}
+	} /* End of Openmp Parallel */
 
 	if (this->verbose) cout << "   Finalize clear memory\n";	
 	qsb.clear();

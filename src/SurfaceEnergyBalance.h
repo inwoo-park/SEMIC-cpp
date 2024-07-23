@@ -90,12 +90,14 @@ class SEMIC{ /* {{{ */
 		void		InitializeParameters(void);
 		void		Display();
 		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		//void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, DoubleVector sp, DoubleVector wind, DoubleVector &evap, DoubleVector &subl, DoubleVector &lhf);
+		void 		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m, double &shf);
 		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		double 	SaturateWaterVaporP(double temperature);
-		
+		void 		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double sp, double qq, double &evap, double &subl, double &lhf);
+		double SaturateWaterVaporP(double temperature);
+
 		void		LongwaveRadiationUp();
-		void		TestReturnVector(vector<double> &tmp);
+		void 		LongwaveRadiationUp(double tsurf, double &lwup);
+		void 		TestReturnVector(vector<double> &tmp);
 
 		void		DiurnalCycle(double tmean, double amp, double &above, double &below);
 

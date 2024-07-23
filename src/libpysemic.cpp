@@ -97,7 +97,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("Albedo_Slater",&SEMIC::Albedo_Slater)
 		.def("Albedo_Denby",&SEMIC::Albedo_Denby)
 		.def("Albedo_ISBA",&SEMIC::Albedo_ISBA)
-		.def("LongwaveRadiationUp",&SEMIC::LongwaveRadiationUp)
+		.def("LongwaveRadiationUp",(void (SEMIC::*)(void))&SEMIC::LongwaveRadiationUp)
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
 		.def("RunEnergyAndMassBalance",&SEMIC::RunEnergyAndMassBalance)
