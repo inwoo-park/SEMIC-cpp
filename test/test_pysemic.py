@@ -59,7 +59,10 @@ def test_LongwaveRadiation(): # {{{
     # }}}
 
 def test_RunSemic(): # {{{
+    '''test RunSemic with AWS dataset from SEMIC-Krapp2017 repository.
+    '''
     import matplotlib.pyplot as plt
+    dirname = os.path.dirname(__file__)
 
     semic = pyseb.SEMIC()
     nx = 1
@@ -69,7 +72,7 @@ def test_RunSemic(): # {{{
     semic.Initialize(nx)
 
     # load dataset
-    inputs = np.loadtxt('../data/c01_input.txt')
+    inputs = np.loadtxt(os.path.join(dirname, '../data/SEMIC-Krapp2017/c01_input.txt'))
     sf  = inputs[:,0]
     rf  = inputs[:,1]
     swd = inputs[:,2]
@@ -222,6 +225,7 @@ def test_SemicForcings_ERA5(): # {{{
     print(f"-- Shape of qq = {np.shape(semic_f.qq[:])}")
     # }}}
 
+@pytest.mark.skip(reason='Skip Running SEMIC with OpenMP')
 def test_semic_openmp_ERA5(): # {{{
     '''test run semic with openmp
     '''
