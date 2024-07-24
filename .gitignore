@@ -3,6 +3,7 @@ install
 test/data/
 *.json
 *.outlog
+.nfs*
 *.errlog
 
 # ---> VSCODE special.
