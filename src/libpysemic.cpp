@@ -101,6 +101,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("qmr",&SEMIC::qmr)
 		.def_readwrite("qmr_res",&SEMIC::qmr_res)
 		.def_readwrite("verbose",&SEMIC::verbose)
+        .def_readwrite("n_ksub",&SEMIC::n_ksub)
 		.def_readwrite("num_threads",&SEMIC::num_threads)
 		.def("Initialize",&SEMIC::Initialize)
 		.def("Display",&SEMIC::Display)

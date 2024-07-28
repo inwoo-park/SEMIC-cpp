@@ -2,6 +2,9 @@
 #include "SemicParameters.h"
 #include "SurfaceEnergyBalance.h"
 
+/* Check Elapsed time! */
+#include <chrono>
+
 SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
@@ -439,7 +442,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step1: Calculate the sensible heat flux\n";
 	
-	#pragma omp for schedule(dynamic)
+	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
 
 		this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i], this->shf[i]);
@@ -449,7 +452,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step2: Calculate the latent heat flux\n";
 
-	#pragma omp for schedule(dynamic)	
+	#pragma omp for //schedule(dynamic)	
 	for (int i=0; i<nx; i++){
 		this->LatentHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->sp[i], this->qq[i], this->evap[i], this->subl[i], this->lhf[i]);
 
@@ -460,7 +463,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step3: Surface physics: long-wave radiation\n";
 	
-	#pragma omp for schedule(dynamic)
+	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++)
 		this->LongwaveRadiationUp(this->tsurf[i], this->lwup[i]);
 	
@@ -469,7 +472,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step4: calculate surface energy balance\n";
 
-	#pragma omp for schedule(dynamic)
+	#pragma omp for //schedule(dynamic)
 	for (i=0; i<nx; i++){
 		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
 	}
@@ -479,7 +482,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step5: update surface temperature\n";
 
-	#pragma omp for schedule(dynamic)
+	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
 
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
@@ -496,7 +499,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose)
 		cout << "   step6: update 2-air temperature\n";
 
-	#pragma omp for schedule(dynamic)
+	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
 		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
@@ -539,25 +542,32 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	#pragma omp parallel private(i, f_rz) shared(nx, snow_to_ice_input, qmelt, qcold, above, below, refrozen_rain, refrozen_snow)
 	{
 
-	#pragma omp for schedule(dynamic)
+    #pragma omp master
+    if (this->verbose){
+        /* Check variable */
+        cout << "RHOW = " << RHOW << endl;
+        cout << "CLM  = " << CLM << endl;
+    }
+
+	#pragma omp for //schedule(dynamic)
 	for (i=0; i<nx; i++){
 		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
 		if (i==0 && this->verbose){
 			cout << "   step1: calculate above/below freezing temperature\n";
-			cout << this->tsurf[i] << endl;
-			cout << this->qmr[i] << endl;
-			cout << this->Param->amp[i] << endl;
+			cout << "      tsurf= " << this->tsurf[i] << endl;
+			cout << "      qmr  = " << this->qmr[i] << endl;
+			cout << "      Tamp = " << this->Param->amp[i] << endl;
 		}
 		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic,
 					this->Param->amp[i], above[i], below[i]);
 		
 		if (i==0 && this->verbose){
-			cout << "above temprature " << above[i] << endl;
-			cout << "below temprature " << below[i] << endl;
+			cout << "      above temprature " << above[i] << endl;
+			cout << "      below temprature " << below[i] << endl;
 		}
 
 		if (i==0 && this->verbose)
-			cout << "   set qmr = 0.\n";
+			cout << "   -- Set qmr = 0.\n";
 		this->qmr[i] = 0.;
 	
 		if (this->mask[i] >= 1){
@@ -753,6 +763,10 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 	int nx=this->nx;
 	int ntime=Forcings->ntime;
 
+    /* Variables for checking elapsed time */
+    chrono::system_clock::time_point tstart;
+	chrono::duration<double> dt1, dt2, dt3;
+
 	/* Check consistency*/
 	assert(this->nx == Forcings->nx);
 
@@ -784,12 +798,22 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 
             /* Now, use forcings variables! */
             if (this->verbose) cout << "Run Energy Balance\n";
+            tstart = chrono::system_clock::now();
             for (i=0; i < this->n_ksub; i++){
                 this->RunEnergyBalance();
             }
+            dt1 = chrono::system_clock::now() - tstart;
 
             if (this->verbose) cout << "Run Mass Balance\n";
+            tstart = chrono::system_clock::now();
             this->RunMassBalance();
+            dt2 = chrono::system_clock::now() - tstart;
+
+            if (this->verbose){
+                cout << "Elapsed time\n";
+                cout << "-- Energy balance = " << dt1.count() << endl;
+                cout << "-- Mass balance   = " << dt2.count() << endl;
+            }
 
             /* Return output value */
             if (_nloop == nloop-1){
