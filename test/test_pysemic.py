@@ -285,96 +285,105 @@ def test_semic_openmp_ERA5(): # {{{
     f.qq.set_value(qq)
     f.rhoa.set_value(rhoa)
 
-    # now calculate surface and enery balance
-    print(f"   -- Load SEMIC module.")
-    semic = pyseb.SEMIC()
-    semic.Initialize(nx)
-    
-    print(f'   -- Prepare initialization and parameters')
-    ONES = np.ones((nx,))
-    semic.tsurf = (273.15-10)*ONES.copy()
-    semic.mask  = 2*np.ones((nx,),dtype=int)
-    semic.hsnow = 5*ONES.copy()
-    semic.hice  = 10*ONES.copy()
-    semic.alb   = 0.8*ONES.copy()
-    semic.qmr   = 0.0*ONES.copy()
+    def InitializeSEMIC(nx):
+        # now calculate surface and enery balance
+        print(f"   -- Load SEMIC module.")
+        semic = pyseb.SEMIC()
+        semic.Initialize(nx)
+        
+        print(f'   -- Prepare initialization and parameters')
+        ONES = np.ones((nx,))
+        semic.tsurf = (273.15-10)*ONES.copy()
+        semic.mask  = 2*np.ones((nx,),dtype=int)
+        semic.hsnow = 5*ONES.copy()
+        semic.hice  = 10*ONES.copy()
+        semic.alb   = 0.8*ONES.copy()
+        semic.qmr   = 0.0*ONES.copy()
 
-    # set initial parameter
-    semic.Param.amp = 2.0*np.ones((nx,))
+        # set initial parameter
+        semic.Param.amp = 2.0*np.ones((nx,))
+        semic.verbose = False
+
+        return semic
 
     # initialize logger
-    df = pandas.DataFrame(columns=['num_thread','time'])
+    df1 = pandas.DataFrame(columns=['num_thread','time'])
+    df2 = df1.copy(deep=True)
     
-    semic.verbose = False
-
-    if 0:
-        for num_threads in [1, 2, 3, 4, 5, 6, 8, 10]:
-            semic.num_threads = num_threads
-            semic.SetOpenmpThreads()
-            print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
-            print(f'   Run energy balance!')
-
-            tstart = datetime.datetime.now()
-            for _ in range(1):
-                for i in range(ntime):
-                    semic.sf    = sf[:,i]
-                    semic.rf    = rf[:,i]
-                    semic.t2m   = t2m[:,i]
-                    semic.lwd   = lwd[:,i]
-                    semic.swd   = swd[:,i]
-                    semic.sp    = sp[:,i]
-                    semic.wind  = wind[:,i]
-                    semic.rhoa  = rhoa[:,i]
-                    semic.qq    = qq[:,i]
-                    
-                    semic.RunEnergyAndMassBalance()
-            elp_time = datetime.datetime.now()-tstart
-            print(f'Elapsed time = {elp_time}')
-
-            df.loc[len(df)] = {'num_thread':num_threads,
-                            'time':elp_time}
+    # Initialize num threads depending on system.
+    if hostname in ['simba00','simba20']:
+        NUM_THREADS = [1, 4, 8, 16, 24]
     else:
-        print(f'   Run energy and mass balance.')
-        smb = []
-        if hostname in ['simba00','simba20']:
-            NUM_THREADS = [1, 4, 8, 16, 24]
-        else:
-            NUM_THREADS = [1, 2, 4, 8]
-        for num_threads in NUM_THREADS:
-            semic.num_threads = num_threads
-            semic.SetOpenmpThreads()
-            print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
+        NUM_THREADS = [1, 2, 4, 8]
+    
+    # Use python and cpp interactive
+    for num_threads in NUM_THREADS:
+        semic = InitializeSEMIC(nx)
+        semic.num_threads = num_threads
+        semic.SetOpenmpThreads()
+        print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
+        print(f'   Run energy balance!')
 
-            # Before run semic initialize default value.
-            ONES = np.ones((nx,))
-            semic.tsurf = (273.15-10)*ONES.copy()
-            semic.mask  = 2*np.ones((nx,),dtype=int)
-            semic.hsnow = 5*ONES.copy()
-            semic.hice  = 10*ONES.copy()
-            semic.alb   = 0.8*ONES.copy()
-            semic.qmr   = 0.0*ONES.copy()
+        tstart = datetime.datetime.now()
+        for _ in range(2):
+            for i in range(ntime):
+                semic.sf    = sf[:,i]
+                semic.rf    = rf[:,i]
+                semic.t2m   = t2m[:,i]
+                semic.lwd   = lwd[:,i]
+                semic.swd   = swd[:,i]
+                semic.sp    = sp[:,i]
+                semic.wind  = wind[:,i]
+                semic.rhoa  = rhoa[:,i]
+                semic.qq    = qq[:,i]
+                
+                semic.RunEnergyAndMassBalance()
+        elp_time = datetime.datetime.now()-tstart
+        print(f'Elapsed time = {elp_time}')
 
-            print(f'   Run energy balance!')
-            # 5-times loop
-            tstart = datetime.datetime.now()
-            semic.RunEnergyAndMassBalance(f, 2)
-            elp_time = datetime.datetime.now()-tstart
-            print(f'Elapsed time = {elp_time}')
+        df1.loc[len(df1)] = {'num_thread':num_threads,
+                        'time':elp_time}
+    
+    # Use cpp only!
+    smb = []
+    for num_threads in NUM_THREADS:
+        semic = InitializeSEMIC(nx)
+        semic.num_threads = num_threads
+        semic.SetOpenmpThreads()
+        print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
 
-            df.loc[len(df)] = {'num_thread':num_threads,
-                            'time':elp_time}
-            
-            # Okay, check difference between threads
-            smb.append(np.array(semic.Result.smb.get_value()))
+        # Before run semic initialize default value.
+        ONES = np.ones((nx,))
+        semic.tsurf = (273.15-10)*ONES.copy()
+        semic.mask  = 2*np.ones((nx,),dtype=int)
+        semic.hsnow = 5*ONES.copy()
+        semic.hice  = 10*ONES.copy()
+        semic.alb   = 0.8*ONES.copy()
+        semic.qmr   = 0.0*ONES.copy()
+
+        print(f'   Run energy balance!')
+        # 5-times loop
+        tstart = datetime.datetime.now()
+        semic.RunEnergyAndMassBalance(f, 2)
+        elp_time = datetime.datetime.now()-tstart
+        print(f'Elapsed time = {elp_time}')
+
+        df2.loc[len(df2)] = {'num_thread':num_threads,
+                        'time':elp_time}
+        
+        # Okay, check difference between threads
+        smb.append(np.array(semic.Result.smb.get_value()))
 
     # Check final value!
     print(smb[0][0,0], smb[1][0,0])
     assert(np.all(smb[0] == smb[1]))
 
-    # import matplotlib.pyplot as plt
-    # fig, ax = plt.subplots()
-    # ax.plot(df['num_thread'], df['time'])
-    # plt.show()
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots()
+    ax.plot(df1['num_thread'], df1['time'], label='C++-Python')
+    ax.plot(df2['num_thread'], df2['time'], label='C++only')
+    ax.legend()
+    plt.show()
     # }}}
 
 if __name__ == '__main__':
