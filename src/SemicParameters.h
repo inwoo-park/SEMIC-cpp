@@ -4,6 +4,8 @@
 #include "iostream"
 #include "array"
 #include "vector"
+// #include "SemicArray.h"
+#include "DataArray.h"
 
 /* Type definition */
 typedef std::vector<double> DoubleVector;
@@ -61,5 +63,62 @@ public:
 		cout << "rhow   " << this->rhow << " density of water (unit: kg m-3)" << endl;
 	};
 }; /* }}}*/
+
+class SemicForcings{
+	public:
+		int nx; /* numer of grid*/
+		int ntime; /* number of time step */
+
+		/* set variables */
+		DoubleMatrix *sf;     /* snowfall [w.e. m s-1] */
+		DoubleMatrix *rf;     /* rainfall [w.e. m s-1] */
+		DoubleMatrix *t2m;    /* surface 2-m air temperature [unit: K]*/
+		DoubleMatrix *sp;     /* Surface pressure [Pa] */
+		DoubleMatrix *lwd;    /* Long-wave radiation downward direction [W m-2] */
+		DoubleMatrix *swd;    /* Short-wave radiation downward direction [W m-2] */
+		DoubleMatrix *wind;   /* Surface wind speed [m s-1] */
+		DoubleMatrix *rhoa;   /* Air density [kg m-3] */
+		DoubleMatrix *qq;     /* air specific humidity [kg kg-1] */	
+
+		/* Initialize constructor and destructor. */
+        SemicForcings(): nx(0), ntime(0),
+            sf(new DoubleMatrix()),
+            rf(new DoubleMatrix()),
+            t2m(new DoubleMatrix()),
+            sp(new DoubleMatrix()),
+            lwd(new DoubleMatrix()),
+            swd(new DoubleMatrix()),
+            wind(new DoubleMatrix()),
+            rhoa(new DoubleMatrix()),
+            qq(new DoubleMatrix())            
+            {}
+            
+		SemicForcings(int nx, int ntime){
+			this->nx = nx;
+			this->ntime = ntime;
+
+            this->sf  = new DoubleMatrix(nx, ntime);
+            this->rf  = new DoubleMatrix(nx, ntime);
+            this->t2m = new DoubleMatrix(nx, ntime);
+
+            this->sp  = new DoubleMatrix(nx, ntime);
+            this->lwd = new DoubleMatrix(nx, ntime);
+            this->swd = new DoubleMatrix(nx, ntime);
+
+            this->wind = new DoubleMatrix(nx, ntime);
+            this->rhoa = new DoubleMatrix(nx, ntime);
+            this->qq = new DoubleMatrix(nx, ntime);
+		}
+		
+        /* Deconstructor */
+		~SemicForcings(){
+            delete[] this->sf;
+            delete[] this->rf;
+            delete[] this->t2m;
+
+            delete[] this->sp, this->lwd, this->swd;
+            delete[] this->wind, this->rhoa, this->qq;
+        }
+};
 
 #endif

@@ -23,13 +23,18 @@ class DoubleMatrix{
 			this->nrow = nrow;
 			this->ncol = ncol;
 
-			AllocateMemory(this->nrow, this->ncol);
+            if (nrow == 0 && ncol == 0){
+                /* Initialize null pointer in this->value */
+                this->value = nullptr;
+            }else{
+                AllocateMemory(this->nrow, this->ncol);
 			
-			for (i=0; i<this->nrow; i++){
-				for (j=0; j<this->ncol; j++){
-					this->value[i][j] = 0.0;
-				}
-			}
+                for (i=0; i<this->nrow; i++){
+                    for (j=0; j<this->ncol; j++){
+                        this->value[i][j] = 0.0;
+                    }
+                }
+            }			
 		}
 		DoubleMatrix(const vector<vector<double>>& values){
 			if (!values.size()){
@@ -208,6 +213,18 @@ class DoubleMatrix{
 			}
 			double* result = new double[this->nrow];
 			for (int i=0; i<this->nrow; ++i){
+				result[i] = this->value[i][col];
+			}
+			return result;	
+		}
+        vector<double> get_column_vector(int col) const{
+			/*Get column vector in "double*" type.
+			*/
+			if (col > this->ncol || col < 0){
+				throw runtime_error("Given col is out of range.");
+			}
+			vector<double> result(this->nrow);
+            for (int i=0; i<this->nrow; ++i){
 				result[i] = this->value[i][col];
 			}
 			return result;	

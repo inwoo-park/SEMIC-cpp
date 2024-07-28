@@ -22,9 +22,14 @@ using namespace std;
 
 class DoubleMatrix {
 public:
+    /* Initialize constructor and destructor */
     DoubleMatrix(size_t rows, size_t cols)
         : nrows(rows), ncols(cols), data(nullptr) {
         allocateMemory();
+    }
+    
+    ~DoubleMatrix() {
+        freeMemory();
     }
 
 #ifdef HAS_PYBIND11
@@ -48,10 +53,6 @@ public:
         return pybind11::array_t<double>({nrows, ncols}, {ncols * sizeof(double), sizeof(double)}, &data[0][0]);
     }
 #endif
-
-    ~DoubleMatrix() {
-        freeMemory();
-    }
 
     double& operator()(size_t row, size_t col) {
         if (row >= nrows || col >= ncols) {

@@ -3,7 +3,8 @@
 #include "pybind11/numpy.h"
 
 #include "SemicParameters.h"
-#include "SemicArray.h"
+// #include "SemicArray.h"
+#include "DataArray.h"
 #include "SurfaceEnergyBalance.h"
 
 namespace py = pybind11;
@@ -45,6 +46,7 @@ PYBIND11_MODULE(libpysemic, m){
 	/*}}}*/
 
 	py::class_<SemicForcings>(m, "SemicForcings")
+        .def(py::init<>())
 		.def(py::init<int, int>())
 		.def_readwrite("nx",&SemicForcings::nx)
 		.def_readwrite("ntime",&SemicForcings::ntime)
@@ -59,8 +61,7 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("qq",&SemicForcings::qq);	
 
 	py::class_<SEMIC>(m, "SEMIC")
-	   .def(py::init<>())
-		.def_readwrite("Param",&SEMIC::Param)
+	    .def_readwrite("Param",&SEMIC::Param)
 		.def_readwrite("Const",&SEMIC::Const)
 		/* initialize forcing variables */
 		.def_readwrite("sf",&SEMIC::sf)
@@ -100,135 +101,146 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("LongwaveRadiationUp",(void (SEMIC::*)(void))&SEMIC::LongwaveRadiationUp)
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
-		.def("RunEnergyAndMassBalance",&SEMIC::RunEnergyAndMassBalance)
+		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(void))&SEMIC::RunEnergyAndMassBalance)
+        .def("RunEnergyAndMassBalance", py::overload_cast<SemicForcings*>(&SEMIC::RunEnergyAndMassBalance))
 		.def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
 		.def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
-		.def("GetOpenmpThreads", &SEMIC::GetOpenmpThreads);
+        // .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
+        .def("GetOpenmpVersion", (int (SEMIC::*)(void)) &SEMIC::GetOpenmpVersion)
+		.def("GetOpenmpThreads", &SEMIC::GetOpenmpThreads)
+        // .def(py::init<int, int>());
+        .def(py::init<>());
 
 	py::class_<DoubleMatrix>(m, "DoubleMatrix")
-        .def(py::init<size_t, size_t>())
-#ifdef HAS_PYBIND11
-		  .def(py::init<py::array_t<double>>())
-#endif
-        .def("rows", &DoubleMatrix::rows)
-        .def("cols", &DoubleMatrix::cols)
-        .def("__call__", static_cast<const double& (DoubleMatrix::*)(size_t, size_t) const>(&DoubleMatrix::operator()))
-        .def("__call__", static_cast<double& (DoubleMatrix::*)(size_t, size_t)>(&DoubleMatrix::operator()))
-        .def("__str__", &DoubleMatrix::toString)
-        .def("__repr__", &DoubleMatrix::toString)
-#ifdef HAS_PYBIND11
-		  .def("to_numpy", &DoubleMatrix::toNumpy)
-#endif
-        .def("__getitem__", [](const DoubleMatrix& m, std::pair<size_t, size_t> index) {
-            return m(index.first, index.second);
-        })
-        .def("__setitem__", [](DoubleMatrix& m, std::pair<size_t, size_t> index, double value) {
-            m(index.first, index.second) = value;
-        })
-		  .def("__getitem__", [](const DoubleMatrix& m, py::tuple index) -> py::object {
-            if (index.size() != 2) throw std::invalid_argument("Index must be a tuple of size 2");
+        .def_readwrite("nrow", &DoubleMatrix::nrow)
+        .def_readwrite("ncol", &DoubleMatrix::ncol)
+        .def("get_column", &DoubleMatrix::get_column_vector)
+        .def("get_row", &DoubleMatrix::get_row_vector)
+        .def("set_value", (void (DoubleMatrix::*)(const vector<vector<double>>&)) &DoubleMatrix::set_value)
+	    .def("set_value", (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
+        .def("get_value", &DoubleMatrix::get_value)
+        .def("sum", (double (DoubleMatrix::*)(void)) &DoubleMatrix::sum)
+	    .def("mean", (double (DoubleMatrix::*)(void)) &DoubleMatrix::mean)
+        .def(py::init<>())
+        .def(py::init<const vector<vector<double>>&>())
+        .def(py::init<int, int>()); /* Empty constructor */
+//         .def("__call__", static_cast<const double& (DoubleMatrix::*)(size_t, size_t) const>(&DoubleMatrix::operator()))
+//         .def("__call__", static_cast<double& (DoubleMatrix::*)(size_t, size_t)>(&DoubleMatrix::operator()))
+//         .def("__str__", &DoubleMatrix::toString)
+//         .def("__repr__", &DoubleMatrix::toString)
+// #ifdef HAS_PYBIND11
+// 		  .def("to_numpy", &DoubleMatrix::toNumpy)
+// #endif
+//         .def("__getitem__", [](const DoubleMatrix& m, std::pair<size_t, size_t> index) {
+//             return m(index.first, index.second);
+//         })
+//         .def("__setitem__", [](DoubleMatrix& m, std::pair<size_t, size_t> index, double value) {
+//             m(index.first, index.second) = value;
+//         })
+// 		  .def("__getitem__", [](const DoubleMatrix& m, py::tuple index) -> py::object {
+//             if (index.size() != 2) throw std::invalid_argument("Index must be a tuple of size 2");
 
-            py::object row_obj = index[0], col_obj = index[1];
-            if (py::isinstance<py::slice>(row_obj) && py::isinstance<py::slice>(col_obj)) {
-                throw std::invalid_argument("Slicing both rows and columns is not supported yet");
-            }
-            else if (py::isinstance<py::slice>(row_obj)) {
-                py::slice row_slice = row_obj.cast<py::slice>();
-                py::ssize_t start, stop, step, slicelength;
-                if (!row_slice.compute(m.rows(), &start, &stop, &step, &slicelength))
-                    throw py::error_already_set();
-                std::vector<double> result(slicelength);
-                for (py::ssize_t i = 0; i < slicelength; ++i) {
-                    result[i] = m(start + i * step, col_obj.cast<py::ssize_t>());
-                }
-                return py::cast(result);
-            }
-            else if (py::isinstance<py::slice>(col_obj)) {
-                py::slice col_slice = col_obj.cast<py::slice>();
-                py::ssize_t start, stop, step, slicelength;
-                if (!col_slice.compute(m.cols(), &start, &stop, &step, &slicelength))
-                    throw py::error_already_set();
-                std::vector<double> result(slicelength);
-                for (py::ssize_t i = 0; i < slicelength; ++i) {
-                    result[i] = m(row_obj.cast<py::ssize_t>(), start + i * step);
-                }
-                return py::cast(result);
-            }
-            else {
-                return py::cast(m(row_obj.cast<py::ssize_t>(), col_obj.cast<py::ssize_t>()));
-            }
-        })
-		.def("__getitem__", [](const DoubleMatrix& m, py::slice slice) -> py::object {
-            py::ssize_t start, stop, step, slicelength;
-            if (!slice.compute(m.rows(), &start, &stop, &step, &slicelength))
-                throw py::error_already_set();
-            std::vector<std::vector<double>> result(slicelength, std::vector<double>(m.cols()));
-            for (py::ssize_t i = 0; i < slicelength; ++i) {
-                for (size_t j = 0; j < m.cols(); ++j) {
-                    result[i][j] = m(start + i * step, j);
-                }
-            }
-            return py::cast(result);
-        })
-		.def("__setitem__", [](DoubleMatrix& m, py::tuple index, py::array_t<double> value) {
-            if (index.size() != 2)
-                throw std::invalid_argument("Index must be a tuple of size 2");
+//             py::object row_obj = index[0], col_obj = index[1];
+//             if (py::isinstance<py::slice>(row_obj) && py::isinstance<py::slice>(col_obj)) {
+//                 throw std::invalid_argument("Slicing both rows and columns is not supported yet");
+//             }
+//             else if (py::isinstance<py::slice>(row_obj)) {
+//                 py::slice row_slice = row_obj.cast<py::slice>();
+//                 py::ssize_t start, stop, step, slicelength;
+//                 if (!row_slice.compute(m.rows(), &start, &stop, &step, &slicelength))
+//                     throw py::error_already_set();
+//                 std::vector<double> result(slicelength);
+//                 for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                     result[i] = m(start + i * step, col_obj.cast<py::ssize_t>());
+//                 }
+//                 return py::cast(result);
+//             }
+//             else if (py::isinstance<py::slice>(col_obj)) {
+//                 py::slice col_slice = col_obj.cast<py::slice>();
+//                 py::ssize_t start, stop, step, slicelength;
+//                 if (!col_slice.compute(m.cols(), &start, &stop, &step, &slicelength))
+//                     throw py::error_already_set();
+//                 std::vector<double> result(slicelength);
+//                 for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                     result[i] = m(row_obj.cast<py::ssize_t>(), start + i * step);
+//                 }
+//                 return py::cast(result);
+//             }
+//             else {
+//                 return py::cast(m(row_obj.cast<py::ssize_t>(), col_obj.cast<py::ssize_t>()));
+//             }
+//         })
+// 		.def("__getitem__", [](const DoubleMatrix& m, py::slice slice) -> py::object {
+//             py::ssize_t start, stop, step, slicelength;
+//             if (!slice.compute(m.rows(), &start, &stop, &step, &slicelength))
+//                 throw py::error_already_set();
+//             std::vector<std::vector<double>> result(slicelength, std::vector<double>(m.cols()));
+//             for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                 for (size_t j = 0; j < m.cols(); ++j) {
+//                     result[i][j] = m(start + i * step, j);
+//                 }
+//             }
+//             return py::cast(result);
+//         })
+// 		.def("__setitem__", [](DoubleMatrix& m, py::tuple index, py::array_t<double> value) {
+//             if (index.size() != 2)
+//                 throw std::invalid_argument("Index must be a tuple of size 2");
 
-            py::object row_obj = index[0], col_obj = index[1];
-            if (py::isinstance<py::slice>(row_obj) && py::isinstance<py::slice>(col_obj)) {
-                throw std::invalid_argument("Slicing both rows and columns is not supported yet");
-            }
-            else if (py::isinstance<py::slice>(row_obj)) {
-                py::slice row_slice = row_obj.cast<py::slice>();
-                py::ssize_t start, stop, step, slicelength;
-                if (!row_slice.compute(m.rows(), &start, &stop, &step, &slicelength))
-                    throw py::error_already_set();
-                if (slicelength != value.size())
-                    throw std::invalid_argument("Slice length and input array size must match");
-                auto buf = value.request();
-                double* ptr = static_cast<double*>(buf.ptr);
-                for (py::ssize_t i = 0; i < slicelength; ++i) {
-                    m(start + i * step, col_obj.cast<py::ssize_t>()) = ptr[i];
-                }
-            }
-            else if (py::isinstance<py::slice>(col_obj)) {
-                py::slice col_slice = col_obj.cast<py::slice>();
-                py::ssize_t start, stop, step, slicelength;
-                if (!col_slice.compute(m.cols(), &start, &stop, &step, &slicelength))
-                    throw py::error_already_set();
-                if (slicelength != value.size())
-                    throw std::invalid_argument("Slice length and input array size must match");
-                auto buf = value.request();
-                double* ptr = static_cast<double*>(buf.ptr);
-                for (py::ssize_t i = 0; i < slicelength; ++i) {
-                    m(row_obj.cast<py::ssize_t>(), start + i * step) = ptr[i];
-                }
-            } else {
-                throw std::invalid_argument("Only row or column slice assignment is supported");
-            }
-        })
-#ifdef HAS_PYBIND11
-        .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::object value) {
-            if (py::isinstance<py::array_t<double>>(value)) {
-                py::array_t<double> array = value.cast<py::array_t<double>>();
-                m.setMatrix(array);
-            } else {
-                throw std::invalid_argument("Only numpy arrays can be assigned to slices");
-            }
-        })
-#endif
-        .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::array_t<double> value) {
-            py::ssize_t start, stop, step, slicelength;
-            if (!slice.compute(m.rows(), &start, &stop, &step, &slicelength))
-                throw py::error_already_set();
-            if (slicelength != value.shape(0) || value.shape(1) != m.cols())
-                throw std::invalid_argument("Slice length and input array dimensions must match");
-            auto buf = value.request();
-            double* ptr = static_cast<double*>(buf.ptr);
-            for (py::ssize_t i = 0; i < slicelength; ++i) {
-                for (size_t j = 0; j < m.cols(); ++j) {
-                    m(start + i * step, j) = ptr[i * m.cols() + j];
-                }
-            }
-        });
+//             py::object row_obj = index[0], col_obj = index[1];
+//             if (py::isinstance<py::slice>(row_obj) && py::isinstance<py::slice>(col_obj)) {
+//                 throw std::invalid_argument("Slicing both rows and columns is not supported yet");
+//             }
+//             else if (py::isinstance<py::slice>(row_obj)) {
+//                 py::slice row_slice = row_obj.cast<py::slice>();
+//                 py::ssize_t start, stop, step, slicelength;
+//                 if (!row_slice.compute(m.rows(), &start, &stop, &step, &slicelength))
+//                     throw py::error_already_set();
+//                 if (slicelength != value.size())
+//                     throw std::invalid_argument("Slice length and input array size must match");
+//                 auto buf = value.request();
+//                 double* ptr = static_cast<double*>(buf.ptr);
+//                 for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                     m(start + i * step, col_obj.cast<py::ssize_t>()) = ptr[i];
+//                 }
+//             }
+//             else if (py::isinstance<py::slice>(col_obj)) {
+//                 py::slice col_slice = col_obj.cast<py::slice>();
+//                 py::ssize_t start, stop, step, slicelength;
+//                 if (!col_slice.compute(m.cols(), &start, &stop, &step, &slicelength))
+//                     throw py::error_already_set();
+//                 if (slicelength != value.size())
+//                     throw std::invalid_argument("Slice length and input array size must match");
+//                 auto buf = value.request();
+//                 double* ptr = static_cast<double*>(buf.ptr);
+//                 for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                     m(row_obj.cast<py::ssize_t>(), start + i * step) = ptr[i];
+//                 }
+//             } else {
+//                 throw std::invalid_argument("Only row or column slice assignment is supported");
+//             }
+//         })
+// #ifdef HAS_PYBIND11
+//         .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::object value) {
+//             if (py::isinstance<py::array_t<double>>(value)) {
+//                 py::array_t<double> array = value.cast<py::array_t<double>>();
+//                 m.setMatrix(array);
+//             } else {
+//                 throw std::invalid_argument("Only numpy arrays can be assigned to slices");
+//             }
+//         })
+// #endif
+//         .def("__setitem__", [](DoubleMatrix& m, py::slice slice, py::array_t<double> value) {
+//             py::ssize_t start, stop, step, slicelength;
+//             if (!slice.compute(m.rows(), &start, &stop, &step, &slicelength))
+//                 throw py::error_already_set();
+//             if (slicelength != value.shape(0) || value.shape(1) != m.cols())
+//                 throw std::invalid_argument("Slice length and input array dimensions must match");
+//             auto buf = value.request();
+//             double* ptr = static_cast<double*>(buf.ptr);
+//             for (py::ssize_t i = 0; i < slicelength; ++i) {
+//                 for (size_t j = 0; j < m.cols(); ++j) {
+//                     m(start + i * step, j) = ptr[i * m.cols() + j];
+//                 }
+//             }
+//         });
 }

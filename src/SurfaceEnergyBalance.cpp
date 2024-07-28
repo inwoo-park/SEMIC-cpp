@@ -84,7 +84,7 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 	this->Param->hcrit = 0.028;
 	this->Param->rcrit = 0.79;
 	this->Param->amp = DoubleVector(nx,3.5);
-	this->alb_scheme = 0;
+	this->alb_scheme = 1; /* Use slater's albedo scheme */
 	this->Param->tau_a = 0.008;
 	this->Param->tau_f = 0.24;
 	this->Param->w_crit = 0.15;
@@ -351,10 +351,17 @@ double SEMIC::Albedo_Denby(double melt, double alb_smax, double alb_smin, double
 	return alb;
 }/*}}}*/
 double SEMIC::Albedo_ISBA(double alb, double sf, double melt, double tstic, double tau, double tau_a, double tau_f, double w_crit, double mcrit, double alb_smin, double alb_smax){/*{{{*/
-	/* Calcaulate snow albedo with ISBA method
+	/*
+	@brief Calcaulate snow albedo with ISBA method. It requires previous step of snow albedo.
 	
-	alb - input initial snow albedo
-	melt - melting rate
+	@param alb - input initial snow albedo (unit: m s-1)
+	@param melt - melting rate (unit :m s-1)
+	@param sf  - snowfall flux (unit: m s-1)
+	@param melt - surface melting value (unit: m s-1)
+	@param tau_a, tau_f - parameters with value of 0.008 and 0.24, respectively.
+	@w_crit - 
+
+	@return alb - surface albedo (unit: -)
 	*/
 	double alb_dry, alb_wet, alb_new;
 	double w_alb;
@@ -423,7 +430,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	
-	#pragma omp parallel /* Initialize Openmp Parallel*/
+	#pragma omp parallel private(i) shared(nx) /* Initialize Openmp Parallel*/
 	{
 
 	#pragma omp single
@@ -503,12 +510,13 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 void SEMIC::RunMassBalance(){/*{{{*/
 	/* Calculate mass balance
 	*/
+	int i;
 	int nx = this->nx;
 	DoubleVector above(nx,0.0), below(nx,0.0);
 	DoubleVector qmelt(nx,0.0), qcold(nx,0.0);
-	DoubleVector snow_to_ice_input(nx);
-	DoubleVector refrozen_rain(nx);
-	DoubleVector refrozen_snow(nx);
+	DoubleVector snow_to_ice_input(nx, 0.0);
+	DoubleVector refrozen_rain(nx, 0.0);
+	DoubleVector refrozen_snow(nx, 0.0);
 
 	assert(this->melt.size() == nx);
 	assert(this->melted_snow.size() == nx);
@@ -524,11 +532,11 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 	if (this->verbose) cout << "   RunMassBalance\n";
 
-	#pragma omp parallel /* start omp parallel*/
+	#pragma omp parallel private(i) shared(nx)/* start omp parallel*/
 	{
 
 	#pragma omp for schedule(dynamic)
-	for (int i=0; i<nx; i++){
+	for (i=0; i<nx; i++){
 		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
 		if (i==0 && this->verbose){
 			cout << "   step1: calculate above/below freezing temperature\n";
@@ -734,12 +742,55 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	this->RunMassBalance();
 } /* }}} */
 
+void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings){ /* {{{ */
+	int i, j;
+	int nx=this->nx;
+	int ntime=Forcings->ntime;
+
+	/* Check consistency*/
+	assert(this->nx == Forcings->nx);
+
+	/* sub time stepping */
+	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
+
+	for (j = 0; j<ntime; j++){
+		if (this->verbose)
+			cout << "Time step " << j+1 << "/" << ntime << endl;
+		
+		/* Update forcing varibales */
+		if (this->verbose)
+			cout << "   Assign variable" << endl;
+		this->sf   = Forcings->sf->get_column_vector(j);
+		this->rf   = Forcings->rf->get_column_vector(j);
+		this->sp   = Forcings->sp->get_column_vector(j);
+		
+		this->lwd  = Forcings->lwd->get_column_vector(j);
+		this->swd  = Forcings->swd->get_column_vector(j);
+		this->wind = Forcings->wind->get_column_vector(j);
+		this->rhoa = Forcings->rhoa->get_column_vector(j);
+		this->t2m  = Forcings->t2m->get_column_vector(j);
+		this->qq   = Forcings->qq->get_column_vector(j);
+	
+
+		/* Now, use forcings variables! */
+		if (this->verbose) cout << "Run Energy Balance\n";
+		for (i=0; i < this->n_ksub; i++){
+			this->RunEnergyBalance();
+		}
+
+		if (this->verbose) cout << "Run Mass Balance\n";
+		this->RunMassBalance();
+	}
+} /* }}} */
+
 void SEMIC::SetOpenmpThreads(void){ /* {{{ */ 
 	omp_set_num_threads(this->num_threads);
 } /* }}} */
+
 void SEMIC::SetOpenmpThreads(int ncpus){ /* {{{ */
 	omp_set_num_threads(ncpus);
 } /* }}} */
+
 int SEMIC::GetOpenmpThreads(void){ /* {{{ */ 
 	int nthreads = 1;
 	#pragma omp parallel
@@ -751,3 +802,23 @@ int SEMIC::GetOpenmpThreads(void){ /* {{{ */
 	}
 	return nthreads;
 } /* }}}*/
+
+// void SEMIC::SetOpenmpRuntime(int scheduleType, int chunkSize){ /* {{{ */
+// 	/*Initialize schedule type for OpenMP
+
+// 	scheduleType
+// 	1: static
+// 	2: dynamic
+// 	3: guidded
+// 	4: auto
+
+// 	chunkSize - chunk size for each thread.
+// 	*/
+// 	omp_set_schedule(scheduleType, chunkSize);
+// } /* }}} */
+
+int SEMIC::GetOpenmpVersion(void){
+	/*return OpenMP version.
+	*/
+	return _OPENMP;
+}

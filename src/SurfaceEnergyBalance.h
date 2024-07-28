@@ -8,7 +8,7 @@
 #include <cassert>
 #include <limits>
 #include "SemicParameters.h"
-#include "SemicArray.h"
+#include "DataArray.h"
 
 /* Initialize global constant value */
 const double PI=3.141592653589793238462643;
@@ -113,35 +113,14 @@ class SEMIC{ /* {{{ */
 		void  	RunEnergyBalance();
 		void	RunMassBalance();
 		void	RunEnergyAndMassBalance();
+		void 	RunEnergyAndMassBalance(SemicForcings *Forcings);
 
 		/* Set openmp environment. */
 		void 	SetOpenmpThreads();
 		void 	SetOpenmpThreads(int ncpus);
 		int 	GetOpenmpThreads();
+		int 	GetOpenmpVersion(void);
+		// void SetOpenmpRuntime(int schedulType, int chunkSize);
 }; /* }}} */
-
-class SemicForcings{
-	public:
-		int nx; /* numer of grid*/
-		int ntime; /* number of time step */
-
-		/* set variables */
-		DoubleMatrix sf;     /* snowfall [w.e. m s-1] */
-		DoubleMatrix rf;     /* rainfall [w.e. m s-1] */
-		DoubleMatrix t2m;    /* surface 2-m air temperature [unit: K]*/
-		DoubleMatrix sp;     /* Surface pressure [Pa] */
-		DoubleMatrix lwd;    /* Long-wave radiation downward direction [W m-2] */
-		DoubleMatrix swd;    /* Short-wave radiation downward direction [W m-2] */
-		DoubleMatrix wind;   /* Surface wind speed [m s-1] */
-		DoubleMatrix rhoa;   /* Air density [kg m-3] */
-		DoubleMatrix qq;     /* air specific humidity [kg kg-1] */	
-
-		/* Initialize constructor and destructor. */
-		SemicForcings(int nx, int ntime)
-        : sf(nx, ntime), rf(nx, ntime), t2m(nx, ntime), sp(nx, ntime),
-          lwd(nx, ntime), swd(nx, ntime), wind(nx, ntime),
-          rhoa(nx, ntime), qq(nx, ntime) {}
-		// ~SemicForcings(void);
-};
 
 #endif
