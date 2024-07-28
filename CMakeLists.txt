@@ -20,8 +20,10 @@ set(CMAKE_CXX_STANDARD 11)
 # Initialize variable.
 set(PYSEMIC libpysemic)
 
-# Find OpenMP package.
 option(USE_OPENMP "Use OpenMP for parallelization" ON)
+option(use_pybind11 "Use pybind11" ON)
+
+# Find OpenMP package.
 if (USE_OPENMP)
 	find_package(OpenMP REQUIRED)
 	if (NOT OpenMP_CXX_FOUND)
@@ -30,20 +32,22 @@ if (USE_OPENMP)
 endif()
 
 # Find pybind11 package.
-if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-	find_package(Python3 REQUIRED Interpreter Development)
-	cmake_print_variables(Python3_EXECUTABLE)
+if (use_pybind11)
+	if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+		find_package(Python3 REQUIRED Interpreter Development)
+		cmake_print_variables(Python3_EXECUTABLE)
 
-	execute_process(
-    COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
-		OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
-		OUTPUT_STRIP_TRAILING_WHITESPACE
-	)
-	cmake_print_variables(PYBIND11_CMAKE_DIR)
-	find_package(pybind11 REQUIRED PATHS ${PYBIND11_CMAKE_DIR})
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-	find_package(Python3 REQUIRED Interpreter Development)
-	find_package(pybind11 REQUIRED)
+		execute_process(
+		COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
+			OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+		cmake_print_variables(PYBIND11_CMAKE_DIR)
+		find_package(pybind11 REQUIRED PATHS ${PYBIND11_CMAKE_DIR})
+	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+		find_package(Python3 REQUIRED Interpreter Development)
+		find_package(pybind11 REQUIRED)
+	endif()
 endif()
 
 # Initialize SEMIC library for main file
@@ -52,10 +56,12 @@ add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
  src/SemicArray.h
  src/SemicParameters.h)
 
-pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
-if (USE_OPENMP AND OpenMP_CXX_FOUND)
-	target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
-	target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)
+if (use_pybind11)
+	pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
+	if (USE_OPENMP AND OpenMP_CXX_FOUND)
+		target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
+		target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)
+	endif()
 endif()
 
 # Initialize SEMIC
@@ -71,5 +77,8 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 # install binary file
 install(TARGETS SEMIC  DESTINATION bin)
 # install library file
-install(TARGETS ${PYSEMIC} DESTINATION lib)
-install(TARGETS ${PYSEMIC} DESTINATION ../pyseb/)
+
+if (use_pybind11)
+	install(TARGETS ${PYSEMIC} DESTINATION lib)
+	install(TARGETS ${PYSEMIC} DESTINATION ../pyseb/)
+endif()
