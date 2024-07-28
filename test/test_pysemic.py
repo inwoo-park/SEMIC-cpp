@@ -3,6 +3,8 @@ import numpy as np
 import pytest
 import os, sys, platform
 import pyseb
+import socket
+hostname = socket.gethostname().lower().replace('-','')
 
 @pytest.fixture
 def test_load(): # {{{
@@ -334,7 +336,11 @@ def test_semic_openmp_ERA5(): # {{{
     else:
         print(f'   Run energy and mass balance.')
         smb = []
-        for num_threads in [1, 2, 4, 8]:
+        if hostname in ['simba00','simba20']:
+            NUM_THREADS = [1, 4, 8, 16, 24]
+        else:
+            NUM_THREADS = [1, 2, 4, 8]
+        for num_threads in NUM_THREADS:
             semic.num_threads = num_threads
             semic.SetOpenmpThreads()
             print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
