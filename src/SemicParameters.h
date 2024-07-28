@@ -64,7 +64,7 @@ public:
 	};
 }; /* }}}*/
 
-class SemicForcings{
+class SemicForcings{ /* {{{ */
 	public:
 		int nx; /* numer of grid*/
 		int ntime; /* number of time step */
@@ -92,7 +92,7 @@ class SemicForcings{
             rhoa(new DoubleMatrix()),
             qq(new DoubleMatrix())            
             {}
-            
+
 		SemicForcings(int nx, int ntime){
 			this->nx = nx;
 			this->ntime = ntime;
@@ -119,6 +119,44 @@ class SemicForcings{
             delete this->sp, this->lwd, this->swd;
             delete this->wind, this->rhoa, this->qq;
         }
-};
+}; /* }}} */
+
+class SemicResult{ /* {{{ */
+    public:
+        DoubleMatrix *smb;
+        DoubleMatrix *smb_ice;
+        DoubleMatrix *smb_snow;
+        DoubleMatrix *melt;
+        DoubleMatrix *alb;
+        DoubleMatrix *alb_snow;
+        DoubleMatrix *hsnow;
+        DoubleMatrix *hice;
+
+        DoubleMatrix *subl;
+        DoubleMatrix *evpl;
+        DoubleMatrix *tsurf;
+
+        SemicResult(){
+            this->smb      = new DoubleMatrix();
+            this->smb_ice  = new DoubleMatrix();
+            this->smb_snow = new DoubleMatrix();
+
+            this->alb      = new DoubleMatrix();
+            this->alb_snow = new DoubleMatrix();
+
+            this->tsurf = new DoubleMatrix();
+        }
+
+        SemicResult(int nrow, int ncol){
+            this->smb      = new DoubleMatrix(nrow, ncol);
+            this->smb_ice  = new DoubleMatrix(nrow, ncol);
+            this->smb_snow = new DoubleMatrix(nrow, ncol);
+
+            this->alb      = new DoubleMatrix(nrow, ncol);
+            this->alb_snow = new DoubleMatrix(nrow, ncol);
+
+            this->tsurf    = new DoubleMatrix(nrow, ncol);
+        }
+}; /* }}} */
 
 #endif

@@ -58,7 +58,15 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("swd",&SemicForcings::swd)
 		.def_readwrite("wind",&SemicForcings::wind)
         .def_readwrite("rhoa",&SemicForcings::rhoa)
-        .def_readwrite("qq",&SemicForcings::qq);	
+        .def_readwrite("qq",&SemicForcings::qq);
+
+    py::class_<SemicResult>(m, "SemicResult")
+        .def_readwrite("smb", &SemicResult::smb)
+        .def_readwrite("smb_ice", &SemicResult::smb_ice)
+        .def_readwrite("alb", &SemicResult::alb)
+        .def_readwrite("alb_snow", &SemicResult::alb_snow)
+        .def(py::init<int, int>())
+        .def(py::init<>()); /* initialize constructor */
 
 	py::class_<SEMIC>(m, "SEMIC")
 	    .def_readwrite("Param",&SEMIC::Param)
