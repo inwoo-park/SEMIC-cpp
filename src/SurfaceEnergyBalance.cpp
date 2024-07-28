@@ -819,6 +819,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
             if (_nloop == nloop-1){
                 for (i=0; i<nx; i++){
                     this->Result->smb->value[i][j]   = this->smb[i];
+                    this->Result->melt->value[i][j]  = this->melt[i];
                     this->Result->tsurf->value[i][j] = this->tsurf[i];
                     this->Result->alb->value[i][j]   = this->alb[i];
                 }

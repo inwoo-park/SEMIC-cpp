@@ -144,6 +144,7 @@ class SemicResult{ /* {{{ */
             this->alb      = new DoubleMatrix();
             this->alb_snow = new DoubleMatrix();
 
+            this->melt  = new DoubleMatrix();
             this->tsurf = new DoubleMatrix();
         }
 
@@ -154,7 +155,8 @@ class SemicResult{ /* {{{ */
 
             this->alb      = new DoubleMatrix(nrow, ncol);
             this->alb_snow = new DoubleMatrix(nrow, ncol);
-
+            
+            this->melt     = new DoubleMatrix(nrow, ncol);
             this->tsurf    = new DoubleMatrix(nrow, ncol);
         }
 }; /* }}} */

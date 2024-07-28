@@ -63,6 +63,8 @@ PYBIND11_MODULE(libpysemic, m){
     py::class_<SemicResult>(m, "SemicResult")
         .def_readwrite("smb", &SemicResult::smb)
         .def_readwrite("smb_ice", &SemicResult::smb_ice)
+        .def_readwrite("melt", &SemicResult::melt)
+        .def_readwrite("tsurf", &SemicResult::tsurf)
         .def_readwrite("alb", &SemicResult::alb)
         .def_readwrite("alb_snow", &SemicResult::alb_snow)
         .def(py::init<int, int>())
