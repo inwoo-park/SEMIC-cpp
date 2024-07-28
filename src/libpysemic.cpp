@@ -102,7 +102,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
 		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(void))&SEMIC::RunEnergyAndMassBalance)
-        .def("RunEnergyAndMassBalance", py::overload_cast<SemicForcings*>(&SEMIC::RunEnergyAndMassBalance))
+        .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*))(&SEMIC::RunEnergyAndMassBalance))
 		.def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
 		.def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
         // .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
