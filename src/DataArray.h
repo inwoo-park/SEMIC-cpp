@@ -131,7 +131,12 @@ class DoubleMatrix{
 				this->ncol = (int)values[0].size();
 
 				if (!this->value){
+					//cout << "DoubleMatrix::set_value - allocate double** value\n";
 					AllocateMemory(this->nrow, this->ncol);
+					//this->value = new double*[this->nrow];
+					//for (int i=0; i<this->nrow; i++){
+					//	this->value[i] = new double[this->ncol];
+					//}
 				}
 				for (int i=0; i<this->nrow; i++){
 					for (int j=0; j<this->ncol; j++){
@@ -139,7 +144,7 @@ class DoubleMatrix{
 					}
 				}
 			} else{
-				if (values.size() !=this->nrow || values[0].size() != this->ncol){
+				if ((int)values.size() !=this->nrow || (int)values[0].size() != this->ncol){
 					throw runtime_error("Dimension mismatch!");
 				}
 				if (!this->value) {

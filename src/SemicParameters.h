@@ -112,12 +112,12 @@ class SemicForcings{
 		
         /* Deconstructor */
 		~SemicForcings(){
-            delete[] this->sf;
-            delete[] this->rf;
-            delete[] this->t2m;
+            delete this->sf;
+            delete this->rf;
+            delete this->t2m;
 
-            delete[] this->sp, this->lwd, this->swd;
-            delete[] this->wind, this->rhoa, this->qq;
+            delete this->sp, this->lwd, this->swd;
+            delete this->wind, this->rhoa, this->qq;
         }
 };
 
