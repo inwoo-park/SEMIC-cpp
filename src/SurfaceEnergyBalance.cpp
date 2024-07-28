@@ -6,6 +6,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
+    this->Result = new SemicResult();
 
 	this->verbose = true;
 
@@ -17,6 +18,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 SEMIC::~SEMIC(void){ /*{{{*/
 	delete Param;
 	delete Const;
+    delete Result;
 } /*}}}*/
 
 void SEMIC::Initialize(int nx){ /* {{{ */
@@ -430,10 +432,10 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	
-	#pragma omp parallel private(i) shared(nx) /* Initialize Openmp Parallel*/
+	#pragma omp parallel private(i) shared(nx, qsb) /* Initialize Openmp Parallel*/
 	{
 
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step1: Calculate the sensible heat flux\n";
 	
@@ -443,7 +445,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i], this->shf[i]);
 	}
 
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step2: Calculate the latent heat flux\n";
 
@@ -454,7 +456,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->subl[i] = this->subl[i]/RHOW;
 	}
 	
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step3: Surface physics: long-wave radiation\n";
 	
@@ -463,7 +465,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->LongwaveRadiationUp(this->tsurf[i], this->lwup[i]);
 	
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step4: calculate surface energy balance\n";
 
@@ -473,7 +475,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	}
 
 	/* 5. Update surface temperature acoording to surface energy balancec */
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step5: update surface temperature\n";
 
@@ -490,7 +492,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	}
 
 	/* 6. Update 2-m air temperature over ice sheet */
-	#pragma omp single
+	#pragma omp master
 	if (this->verbose)
 		cout << "   step6: update 2-air temperature\n";
 
@@ -512,6 +514,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	*/
 	int i;
 	int nx = this->nx;
+    double f_rz; 
 	DoubleVector above(nx,0.0), below(nx,0.0);
 	DoubleVector qmelt(nx,0.0), qcold(nx,0.0);
 	DoubleVector snow_to_ice_input(nx, 0.0);
@@ -532,7 +535,8 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 	if (this->verbose) cout << "   RunMassBalance\n";
 
-	#pragma omp parallel private(i) shared(nx)/* start omp parallel*/
+    /* start omp parallel*/
+	#pragma omp parallel private(i, f_rz) shared(nx, snow_to_ice_input, qmelt, qcold, above, below, refrozen_rain, refrozen_snow)
 	{
 
 	#pragma omp for schedule(dynamic)
@@ -589,7 +593,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 		/* 5. Refreezing (m s-1) as fraction of melt (increase with snow height) */
 		if (i==0 && this->verbose) cout << "   step5: refreezing.\n";
-		double f_rz = this->Param->rcrit; /* get freezing parameter*/
+		f_rz = this->Param->rcrit; /* get freezing parameter*/
 
 		this->refr[i] = qcold[i] / (RHOW * CLM);
 		/* potential refreezing */
@@ -742,7 +746,9 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	this->RunMassBalance();
 } /* }}} */
 
-void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings){ /* {{{ */
+void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ */
+    /* Run SEMIC with SemicForcing class. */
+
 	int i, j;
 	int nx=this->nx;
 	int ntime=Forcings->ntime;
@@ -750,37 +756,56 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings){ /* {{{ */
 	/* Check consistency*/
 	assert(this->nx == Forcings->nx);
 
+    /* Initialize new Result class */
+    this->Result = new SemicResult(nx, ntime);
+
 	/* sub time stepping */
 	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
-	for (j = 0; j<ntime; j++){
-		if (this->verbose)
-			cout << "Time step " << j+1 << "/" << ntime << endl;
-		
-		/* Update forcing varibales */
-		if (this->verbose)
-			cout << "   Assign variable" << endl;
-		this->sf   = Forcings->sf->get_column_vector(j);
-		this->rf   = Forcings->rf->get_column_vector(j);
-		this->sp   = Forcings->sp->get_column_vector(j);
-		
-		this->lwd  = Forcings->lwd->get_column_vector(j);
-		this->swd  = Forcings->swd->get_column_vector(j);
-		this->wind = Forcings->wind->get_column_vector(j);
-		this->rhoa = Forcings->rhoa->get_column_vector(j);
-		this->t2m  = Forcings->t2m->get_column_vector(j);
-		this->qq   = Forcings->qq->get_column_vector(j);
-	
+    for (int _nloop=0; _nloop<nloop; _nloop++){
+        for (j = 0; j<ntime; j++){
+            if (this->verbose)
+                cout << "Time step " << j+1 << "/" << ntime << endl;
+            
+            /* Update forcing varibales */
+            if (this->verbose)
+                cout << "   Assign variable" << endl;
+            this->sf   = Forcings->sf->get_column_vector(j);
+            this->rf   = Forcings->rf->get_column_vector(j);
+            this->sp   = Forcings->sp->get_column_vector(j);
+            
+            this->lwd  = Forcings->lwd->get_column_vector(j);
+            this->swd  = Forcings->swd->get_column_vector(j);
+            this->wind = Forcings->wind->get_column_vector(j);
+            this->rhoa = Forcings->rhoa->get_column_vector(j);
+            this->t2m  = Forcings->t2m->get_column_vector(j);
+            this->qq   = Forcings->qq->get_column_vector(j);
+        
 
-		/* Now, use forcings variables! */
-		if (this->verbose) cout << "Run Energy Balance\n";
-		for (i=0; i < this->n_ksub; i++){
-			this->RunEnergyBalance();
-		}
+            /* Now, use forcings variables! */
+            if (this->verbose) cout << "Run Energy Balance\n";
+            for (i=0; i < this->n_ksub; i++){
+                this->RunEnergyBalance();
+            }
 
-		if (this->verbose) cout << "Run Mass Balance\n";
-		this->RunMassBalance();
-	}
+            if (this->verbose) cout << "Run Mass Balance\n";
+            this->RunMassBalance();
+
+            /* Return output value */
+            if (_nloop == nloop-1){
+                for (i=0; i<nx; i++){
+                    this->Result->smb->value[i][j]   = this->smb[i];
+                    this->Result->tsurf->value[i][j] = this->tsurf[i];
+                    this->Result->alb->value[i][j]   = this->alb[i];
+                }
+            }
+        }
+    }
+} /* }}} */
+
+void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings){ /* {{{ */
+    /* Only run one-time */
+    this->RunEnergyAndMassBalance(Forcings, 1);
 } /* }}} */
 
 void SEMIC::SetOpenmpThreads(void){ /* {{{ */ 

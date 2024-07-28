@@ -38,6 +38,7 @@ class SEMIC{ /* {{{ */
 
 		SemicParameters	*Param;
 		SemicConstants 	*Const;
+        SemicResult     *Result;
 
 		DoubleVector t2m;    /* 2-m air temperature [unit: K] */
 		DoubleVector tsurf;  /* surface temperature [unit: K] */
@@ -113,9 +114,10 @@ class SEMIC{ /* {{{ */
 		void  	RunEnergyBalance();
 		void	RunMassBalance();
 		void	RunEnergyAndMassBalance();
-		void 	RunEnergyAndMassBalance(SemicForcings *Forcings);
+		void 	RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop);
+        void    RunEnergyAndMassBalance(SemicForcings *Forcings);
 
-		/* Set openmp environment. */
+        /* Set openmp environment. */
 		void 	SetOpenmpThreads();
 		void 	SetOpenmpThreads(int ncpus);
 		int 	GetOpenmpThreads();
