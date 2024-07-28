@@ -190,13 +190,17 @@ def test_SemicForcings_ERA5(): # {{{
     _dirname = os.path.dirname(__file__)
     os.chdir(_dirname)
 
+    print('Load ERA5 interpolate dataset.')
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
-    # nx = 1000 # only 100 nodes are required
+    nx = 1000 # only 100 nodes are required
 
-    print(f'   shape of t2m = ({nx}, {ntime})')
+    print(f'Shape of t2m = ({nx}, {ntime})')
 
-    semic_f = pyseb.SemicForcings(nx, ntime)
+    print(f'Constrcut SemicForcings class.')
+    semic_f = pyseb.SemicForcings()
+
+    print(f'... Okay, now initialize variables.')
     sf  = force['msr'].T[:nx,:]
     rf  = force['mtpr'].T[:nx,:] - force['msr'].T[:nx,:]
     t2m = force['t2m'].T[:nx,:]
@@ -205,24 +209,32 @@ def test_SemicForcings_ERA5(): # {{{
     sp  = force['sp'].T[:nx,:]
     wind= force['wind2m'].T[:nx,:]
     
-    semic_f.rf = pyseb.DoubleMatrix(rf)
-    semic_f.sf = pyseb.DoubleMatrix(sf)
-    semic_f.t2m = pyseb.DoubleMatrix(t2m)
-    semic_f.lwd = pyseb.DoubleMatrix(lwd)
-    semic_f.swd = pyseb.DoubleMatrix(swd)
-    semic_f.sp = pyseb.DoubleMatrix(sp)
-    semic_f.wind = pyseb.DoubleMatrix(wind)
-
-    # set air density
+    print('Set rainfall flux')
+    semic_f.rf.set_value(rf)
+    semic_f.sf.set_value(sf)
+    semic_f.t2m.set_value(t2m)
+    semic_f.lwd.set_value(lwd) 
+    semic_f.swd.set_value(swd)
+    semic_f.sp.set_value(sp)
+    semic_f.wind.set_value(wind)
+    
+    print("Calculate specific humidity and air densit.")
     qq = pyseb.utils.Dewpoint2SpecificHumidity(force['d2m'].T[:nx,:], force['sp'].T[:nx,:])
     rhoa = pyseb.utils.AirDensityFromSpecificHumidity(force['sp'].T[:nx,:], force['t2m'].T[:nx,:], qq)
-    qq = qq
-    rhoa = rhoa
-    semic_f.qq  = pyseb.DoubleMatrix(qq)
-    semic_f.rhoa= pyseb.DoubleMatrix(rhoa)
 
-    print(f"Show information.")
-    print(f"-- Shape of qq = {np.shape(semic_f.qq[:])}")
+    print('-- Set specific humidity.')
+    semic_f.qq.set_value(qq)
+    print('-- Set air density.')
+    semic_f.rhoa.set_value(rhoa)
+
+    del sf, rf, t2m, lwd, swd, sp, wind
+    del rhoa, qq
+    del force
+
+    # check variable information.
+    print(f'SemicForcings.t2m information')
+    print(f'nrow = {semic_f.t2m.nrow}')
+    print(f'ncol = {semic_f.t2m.ncol}')
     # }}}
 
 @pytest.mark.skip(reason='Skip Running SEMIC with OpenMP')
