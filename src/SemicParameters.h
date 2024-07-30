@@ -151,8 +151,8 @@ class SemicResult{ /* {{{ */
             this->melt  = new DoubleMatrix();
             this->tsurf = new DoubleMatrix();
 
-				this->hsnow = new DoubleMatrix();
-				this->hice  = new DoubleMatrix();
+            this->hsnow = new DoubleMatrix();
+            this->hice  = new DoubleMatrix();
 
             /* Initialize output requests */
             this->output_request.push_back("smb");
@@ -161,12 +161,12 @@ class SemicResult{ /* {{{ */
             this->output_request.push_back("melt");
             this->output_request.push_back("alb");
             this->output_request.push_back("tsurf");
-				this->output_request.push_back("hsnow");
-				this->output_request.push_back("hice");
+            this->output_request.push_back("hsnow");
+            this->output_request.push_back("hice");
 
-				//this->output_list = {"smb", "smb_snow",
-				//"smb_ice",
-				//"tsurf","melt","alb","hsnow","hice"};
+            //this->output_list = {"smb", "smb_snow",
+            //"smb_ice",
+            //"tsurf","melt","alb","hsnow","hice"};
         } /* }}} */
 
         SemicResult(int nrow, int ncol){ /* {{{ */
