@@ -170,15 +170,23 @@ class SemicResult{ /* {{{ */
         }
 
         ~SemicResult(){
-            delete[] this->smb;
-            delete[] this->smb_ice;
-            delete[] this->smb_snow;
+            if (this->smb)
+                delete[] this->smb;
+            if (this->smb_ice)
+                delete[] this->smb_ice;
+            if (this->smb_snow)
+                delete[] this->smb_snow;
 
-            delete[] this->alb;
-            delete[] this->alb_snow;
+            if (this->alb)
+                delete[] this->alb;
 
-            delete[] this->melt;
-            delete[] this->tsurf;
+            if (this->alb_snow)
+                delete[] this->alb_snow;
+
+            if (this->melt)
+                delete[] this->melt;
+            if (this->tsurf)
+                delete[] this->tsurf;
         }
 }; /* }}} */
 
