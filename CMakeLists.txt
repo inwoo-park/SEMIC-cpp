@@ -75,9 +75,9 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 # include_directories(src)
 
 # Test cpp test.
-add_executable(test_memory test/cpp/test_memory.cpp)
-target_link_libraries(test_memory SemicLib)
-target_include_directories(test_memory PUBLIC src)
+add_executable(test_memory_leakage test/cpp/test_memory_leakage.cpp)
+target_link_libraries(test_memory_leakage SemicLib)
+target_include_directories(test_memory_leakage PUBLIC src)
 
 # Install
 # install binary file

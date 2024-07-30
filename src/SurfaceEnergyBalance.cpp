@@ -9,14 +9,12 @@ SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
-    this->Result = new SemicResult();
+   this->Result = new SemicResult();
 
 	this->verbose = true;
 
 	this->num_threads = 1; /* use single cpus */
 	this->SetOpenmpThreads(1); /* default setting with single cpu usage.*/
-
-	this->InitializeParameters();
 } /*}}}*/
 SEMIC::~SEMIC(void){ /*{{{*/
 	delete Param;
@@ -29,49 +27,56 @@ void SEMIC::Initialize(int nx){ /* {{{ */
 		* Initialize SEMIC class.
 		*/
 		this->nx         = nx;
+
+		double initValue = 0.0;
+		this->InitializeParameters();
 		this->alb_scheme = 0;
 
-		//vector<double> zeros(nx,0);
+		this->t2m    = DoubleVector(nx,initValue);
+		this->tsurf  = DoubleVector(nx,initValue);
+		this->shf    = DoubleVector(nx,initValue);
 
-		this->t2m    = DoubleVector(nx,0.0);
-		this->tsurf  = DoubleVector(nx,0.0);
-		this->shf    = DoubleVector(nx,0.0);
+		this->wind = DoubleVector(nx,initValue); 
+		this->rhoa = DoubleVector(nx,initValue);
+		this->qq   = DoubleVector(nx,initValue);
 
-		this->wind = DoubleVector(nx,0.0); 
-		this->rhoa = DoubleVector(nx,0.0);
-		this->qq   = DoubleVector(nx,0.0);
+		this->lwup = DoubleVector(nx,initValue);
 
-		this->lwup = DoubleVector(nx,0.0);
+		this->alb      = DoubleVector(nx,initValue);
+		this->alb_snow = DoubleVector(nx,initValue);
 
-		this->alb      = DoubleVector(nx,0.0);
-		this->alb_snow = DoubleVector(nx,0.0);
+		this->smb      = DoubleVector(nx,initValue);
+		this->smb_snow = DoubleVector(nx,initValue);
+		this->smb_ice  = DoubleVector(nx,initValue);
 
-		this->smb      = DoubleVector(nx,0.0);
-		this->smb_snow = DoubleVector(nx,0.0);
-		this->smb_ice  = DoubleVector(nx,0.0);
+		this->acc		= DoubleVector(nx,initValue);
 
-		this->acc		= DoubleVector(nx,0.0);
+		this->melt        = DoubleVector(nx,initValue);
+		this->melted_snow = DoubleVector(nx,initValue);
+		this->melted_ice  = DoubleVector(nx,initValue);
 
-		this->melt        = DoubleVector(nx,0.0);
-		this->melted_snow = DoubleVector(nx,0.0);
-		this->melted_ice  = DoubleVector(nx,0.0);
+		this->runoff      = DoubleVector(nx,initValue);
 
-		this->runoff      = DoubleVector(nx,0.0);
+		this->refr = DoubleVector(nx,initValue);
 
-		this->refr = DoubleVector(nx,0.0);
-
-		this->hsnow = DoubleVector(nx,0.0);
-		this->hice  = DoubleVector(nx,0.0);
+		this->hsnow = DoubleVector(nx,initValue);
+		this->hice  = DoubleVector(nx,initValue);
 		
-		this->subl = DoubleVector(nx,0.0);
-		this->evap = DoubleVector(nx,0.0);
-		this->lhf  = DoubleVector(nx,0.0);
+		this->subl = DoubleVector(nx,initValue);
+		this->evap = DoubleVector(nx,initValue);
+		this->lhf  = DoubleVector(nx,initValue);
 
-		this->qmr    = DoubleVector(nx,0.0);
-		this->qmr_res= DoubleVector(nx,0.0);
+		this->qmr    = DoubleVector(nx,initValue);
+		this->qmr_res= DoubleVector(nx,initValue);
 } /* }}} */
 
 void SEMIC::InitializeParameters(void){ /*{{{*/
+	/* first check nx value! */
+	if (this->nx == 0){
+		throw runtime_error("ERROR: SEMIC->nx is not defined!");
+	}
+	double init_amp = 3.5;
+
 	/* Initialize parameters */
 	this->n_ksub = 3;
 	this->Param->ceff = 2e+6;
@@ -88,7 +93,7 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 
 	this->Param->hcrit = 0.028;
 	this->Param->rcrit = 0.79;
-	this->Param->amp = DoubleVector(nx,3.5);
+	this->Param->amp = DoubleVector(this->nx, init_amp);
 	this->alb_scheme = 1; /* Use slater's albedo scheme */
 	this->Param->tau_a = 0.008;
 	this->Param->tau_f = 0.24;
