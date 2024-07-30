@@ -103,7 +103,7 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 
 void SEMIC::Display(){ /* {{{ */
 	cout << this->nx << "\n";
-	for (int i=0; i<this->smb.size(); i++){
+	for (int i=0; i<(int)this->smb.size(); i++){
 		cout << this->smb[i] << " " << this->t2m[i] << "\n";
 	}
 } /* }}} */
@@ -281,7 +281,7 @@ double SEMIC::SaturateWaterVaporP(double temperature) { /* {{{ */
 } /* }}} */
 
 void SEMIC::TestReturnVector(vector<double> &tmp){ /*{{{*/
-	for (int i=0; i<tmp.size(); i++){
+	for (int i=0; i<(int)tmp.size(); i++){
 		tmp[i] = (double)i;
 	}
 }/*}}}*/
@@ -294,7 +294,8 @@ void SEMIC::DiurnalCycle(double tmean, double amp, double &above, double &below)
 	above: double - above temperataure (unit: K)
 	below: double - below temperature (unit: K)
 	*/
-	double tmp1, tmp2; /* temporal variable */
+	double tmp1=0.0;
+	double tmp2=0.0; /* temporal variable */
 	
 	/* Check consistency*/
 	if (abs(tmean/amp) < 1.0){
@@ -738,7 +739,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	/* Run both energy and mass balance
 	*/
-	int i, nx=this->nx;
+	int i;
 
 	/* sub time stepping */
 	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
@@ -770,7 +771,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 
     /* Variables for checking elapsed time */
     chrono::system_clock::time_point tstart;
-	 chrono::duration<double> dt1, dt2, dt3;
+	 chrono::duration<double> dt1, dt2;
 
 	 /* Check consistency*/
 	 assert(this->nx == Forcings->nx);
