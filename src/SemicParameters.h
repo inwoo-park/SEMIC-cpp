@@ -117,8 +117,12 @@ class SemicForcings{ /* {{{ */
             delete this->rf;
             delete this->t2m;
 
-            delete this->sp, this->lwd, this->swd;
-            delete this->wind, this->rhoa, this->qq;
+            delete this->sp;
+				delete this->lwd;
+				delete this->swd;
+            delete this->wind;
+				delete this->rhoa;
+				delete this->qq;
         }
 }; /* }}} */
 

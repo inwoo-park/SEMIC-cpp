@@ -53,8 +53,9 @@ endif()
 # Initialize SEMIC library for main file
 add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
  src/SurfaceEnergyBalance.h
- src/SemicArray.h
- src/SemicParameters.h)
+ src/SemicParameters.h
+ src/DataArray.h
+ )
 
 if (use_pybind11)
 	pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
@@ -72,6 +73,11 @@ target_link_libraries(SEMIC SemicLib)
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 # include_directories(src)
+
+# Test cpp test.
+add_executable(test_memory test/cpp/test_memory.cpp)
+target_link_libraries(test_memory SemicLib)
+target_include_directories(test_memory PUBLIC src)
 
 # Install
 # install binary file
