@@ -123,6 +123,7 @@ class SemicForcings{ /* {{{ */
 
 class SemicResult{ /* {{{ */
     public:
+        vector<string> output_request;
         DoubleMatrix *smb;
         DoubleMatrix *smb_ice;
         DoubleMatrix *smb_snow;
@@ -146,6 +147,14 @@ class SemicResult{ /* {{{ */
 
             this->melt  = new DoubleMatrix();
             this->tsurf = new DoubleMatrix();
+
+            /* Initialize output requests */
+            this->output_request.push_back("smb");
+            this->output_request.push_back("smb_snow");
+            this->output_request.push_back("smb_ice");
+            this->output_request.push_back("melt");
+            this->output_request.push_back("alb");
+            this->output_request.push_back("tsurf");
         }
 
         SemicResult(int nrow, int ncol){
@@ -158,6 +167,18 @@ class SemicResult{ /* {{{ */
             
             this->melt     = new DoubleMatrix(nrow, ncol);
             this->tsurf    = new DoubleMatrix(nrow, ncol);
+        }
+
+        ~SemicResult(){
+            delete[] this->smb;
+            delete[] this->smb_ice;
+            delete[] this->smb_snow;
+
+            delete[] this->alb;
+            delete[] this->alb_snow;
+
+            delete[] this->melt;
+            delete[] this->tsurf;
         }
 }; /* }}} */
 

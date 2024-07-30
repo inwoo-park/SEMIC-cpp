@@ -67,6 +67,7 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("tsurf", &SemicResult::tsurf)
         .def_readwrite("alb", &SemicResult::alb)
         .def_readwrite("alb_snow", &SemicResult::alb_snow)
+        .def_readwrite("output_request", &SemicResult::output_request)
         .def(py::init<int, int>())
         .def(py::init<>()); /* initialize constructor */
 
