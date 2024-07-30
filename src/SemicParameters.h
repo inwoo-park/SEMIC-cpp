@@ -1,9 +1,10 @@
 #ifndef SEMICPARAMETERS_H
 #define SEMICPARAMETERS_H
 
-#include "iostream"
-#include "array"
-#include "vector"
+#include <iostream>
+#include <array> 
+#include <vector>
+#include <algorithm> /* for using "find" */
 // #include "SemicArray.h"
 #include "DataArray.h"
 
@@ -124,6 +125,8 @@ class SemicForcings{ /* {{{ */
 class SemicResult{ /* {{{ */
     public:
         vector<string> output_request;
+		  vector<string> output_list = {"smb", "smb_snow","smb_ice",
+				"tsurf","melt","alb","hsnow","hice"};
         DoubleMatrix *smb;
         DoubleMatrix *smb_ice;
         DoubleMatrix *smb_snow;
@@ -137,7 +140,7 @@ class SemicResult{ /* {{{ */
         DoubleMatrix *evpl;
         DoubleMatrix *tsurf;
 
-        SemicResult(){
+        SemicResult(){ /* {{{ */
             this->smb      = new DoubleMatrix();
             this->smb_ice  = new DoubleMatrix();
             this->smb_snow = new DoubleMatrix();
@@ -148,6 +151,9 @@ class SemicResult{ /* {{{ */
             this->melt  = new DoubleMatrix();
             this->tsurf = new DoubleMatrix();
 
+				this->hsnow = new DoubleMatrix();
+				this->hice  = new DoubleMatrix();
+
             /* Initialize output requests */
             this->output_request.push_back("smb");
             this->output_request.push_back("smb_snow");
@@ -155,9 +161,15 @@ class SemicResult{ /* {{{ */
             this->output_request.push_back("melt");
             this->output_request.push_back("alb");
             this->output_request.push_back("tsurf");
-        }
+				this->output_request.push_back("hsnow");
+				this->output_request.push_back("hice");
 
-        SemicResult(int nrow, int ncol){
+				//this->output_list = {"smb", "smb_snow",
+				//"smb_ice",
+				//"tsurf","melt","alb","hsnow","hice"};
+        } /* }}} */
+
+        SemicResult(int nrow, int ncol){ /* {{{ */
             this->smb      = new DoubleMatrix(nrow, ncol);
             this->smb_ice  = new DoubleMatrix(nrow, ncol);
             this->smb_snow = new DoubleMatrix(nrow, ncol);
@@ -167,27 +179,40 @@ class SemicResult{ /* {{{ */
             
             this->melt     = new DoubleMatrix(nrow, ncol);
             this->tsurf    = new DoubleMatrix(nrow, ncol);
-        }
+        } /* }}} */
 
-        ~SemicResult(){
-            if (this->smb)
-                delete[] this->smb;
-            if (this->smb_ice)
-                delete[] this->smb_ice;
-            if (this->smb_snow)
-                delete[] this->smb_snow;
+        ~SemicResult(){ /* {{{ */
+			   //cout << "Destroy memory!\n";
+			   //cout << "Destroy memory: smb\n";
+            //if (this->smb)
+                delete this->smb;
+			   //cout << "Destroy memory: smb_ice\n";
+            //if (this->smb_ice)
+                delete this->smb_ice;
+            //if (this->smb_snow)
+                delete this->smb_snow;
 
-            if (this->alb)
-                delete[] this->alb;
+			   //cout << "Destroy memory: alb\n";
+            //if (this->alb)
+                delete this->alb;
 
-            if (this->alb_snow)
-                delete[] this->alb_snow;
+            //if (this->alb_snow)
+                delete this->alb_snow;
 
-            if (this->melt)
-                delete[] this->melt;
-            if (this->tsurf)
-                delete[] this->tsurf;
-        }
+            //if (this->melt)
+                delete this->melt;
+            //if (this->tsurf)
+                delete this->tsurf;
+        } /* }}} */
+
+		   /* search if specific string in string array */
+		   bool iscontain(vector<string> list, string value){
+				return find(list.begin(), list.end(), value) != list.end();
+			}
+
+			bool ContainOutput(string value){
+				return find(this->output_list.begin(), this->output_list.end(), value) != output_list.end();
+			}
 }; /* }}} */
 
 #endif

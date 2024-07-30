@@ -6,6 +6,28 @@ import pyseb
 import socket
 hostname = socket.gethostname().lower().replace('-','')
 
+def InitializeSEMIC(nx): # {{{
+    # now calculate surface and enery balance
+    print(f"   -- Load SEMIC module.")
+    semic = pyseb.SEMIC()
+    semic.Initialize(nx)
+    
+    print(f'   -- Prepare initialization and parameters')
+    ONES = np.ones((nx,))
+    semic.tsurf = (273.15-10)*ONES.copy()
+    semic.mask  = 2*np.ones((nx,),dtype=int)
+    semic.hsnow = 5*ONES.copy()
+    semic.hice  = 10*ONES.copy()
+    semic.alb   = 0.8*ONES.copy()
+    semic.qmr   = 0.0*ONES.copy()
+
+    # set initial parameter
+    semic.Param.amp = 2.0*np.ones((nx,))
+    semic.verbose = False
+
+    return semic
+# }}}
+
 @pytest.fixture
 def test_load(): # {{{
     nx = 10
@@ -285,27 +307,6 @@ def test_semic_openmp_ERA5(): # {{{
     f.qq.set_value(qq)
     f.rhoa.set_value(rhoa)
 
-    def InitializeSEMIC(nx):
-        # now calculate surface and enery balance
-        print(f"   -- Load SEMIC module.")
-        semic = pyseb.SEMIC()
-        semic.Initialize(nx)
-        
-        print(f'   -- Prepare initialization and parameters')
-        ONES = np.ones((nx,))
-        semic.tsurf = (273.15-10)*ONES.copy()
-        semic.mask  = 2*np.ones((nx,),dtype=int)
-        semic.hsnow = 5*ONES.copy()
-        semic.hice  = 10*ONES.copy()
-        semic.alb   = 0.8*ONES.copy()
-        semic.qmr   = 0.0*ONES.copy()
-
-        # set initial parameter
-        semic.Param.amp = 2.0*np.ones((nx,))
-        semic.verbose = False
-
-        return semic
-
     # initialize logger
     df1 = pandas.DataFrame(columns=['num_thread','time'])
     df2 = df1.copy(deep=True)
@@ -386,6 +387,72 @@ def test_semic_openmp_ERA5(): # {{{
     plt.show()
     # }}}
 
+@pytest.mark.skip(reason='Skip testing output_request')
+def test_OutputRequest(): # {{{
+    import tqdm
+    import xarray, netCDF4
+    import scipy.io
+    import datetime, pandas
+
+    # move to specific directory
+    _dirname = os.path.dirname(__file__)
+    os.chdir(_dirname)
+
+    force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
+    ntime, nx = force['t2m'].shape
+    nx = 10000 # only 100 nodes are required
+
+    print(f'   shape of t2m = ({nx}, {ntime})')
+
+    print(f'   Initialize forcing variables.')
+    sf  = force['msr'].T[:nx,:]
+    rf  = force['mtpr'].T[:nx,:] - force['msr'].T[:nx,:]
+    t2m = force['t2m'].T[:nx,:]
+    lwd = force['msdwlwrf'].T[:nx,:]
+    swd = force['msdwswrf'].T[:nx,:]
+    sp  = force['sp'].T[:nx,:]
+    wind= force['wind2m'].T[:nx,:]
+    
+    # set air density
+    qq = pyseb.utils.Dewpoint2SpecificHumidity(force['d2m'].T[:nx,:], force['sp'].T[:nx,:])
+    rhoa = pyseb.utils.AirDensityFromSpecificHumidity(force['sp'].T[:nx,:], force['t2m'].T[:nx,:], qq)
+        
+    print(f'   Set SemicForcings')
+    f = pyseb.SemicForcings()
+    f.nx = nx
+    f.ntime = ntime
+    f.sf.set_value(sf)
+    f.rf.set_value(rf)
+    f.sp.set_value(sp)
+    f.t2m.set_value(t2m)
+    f.lwd.set_value(lwd)
+    f.swd.set_value(swd)
+    f.wind.set_value(wind)
+    f.qq.set_value(qq)
+    f.rhoa.set_value(rhoa)
+
+    # initialize semic!
+    semic = InitializeSEMIC(nx)
+    semic.num_threads = 4
+    semic.SetOpenmpThreads()
+
+    # show default request output
+    print(f'Request output = {semic.output_request}')
+
+    # now, modify
+    semic.output_request = ['smb']
+
+    # SemicForcing class = f
+    # nloop = 2
+    semic.RunEnergyAndMassBalance(f, 1)
+
+    try:
+        print(semic.Result.hsnow.get_value())
+    except:
+        print('semic.Result.hsnow is not defined!')
+    print(np.shape(semic.Result.smb.get_value()))
+    # }}}
+
 if __name__ == '__main__':
     print('   Do main')
     #test_load()
@@ -398,4 +465,5 @@ if __name__ == '__main__':
     # test_openmp()
     # test_DoubleMatrix()
     # test_SemicForcings_ERA5()
-    test_semic_openmp_ERA5()
+    #test_semic_openmp_ERA5()
+    test_OutputRequest()

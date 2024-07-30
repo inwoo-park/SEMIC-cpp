@@ -82,6 +82,8 @@ class SEMIC{ /* {{{ */
 
 		bool verbose; /* show process */
 
+		vector<string> output_request = {"smb","melt","alb","tsurf","hsnow"};
+
 		/* }}} */
 
 		SEMIC(void);

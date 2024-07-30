@@ -45,7 +45,7 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def("Display",&SemicConstants::Display);
 	/*}}}*/
 
-	py::class_<SemicForcings>(m, "SemicForcings")
+	py::class_<SemicForcings>(m, "SemicForcings") /* {{{ */
         .def(py::init<>())
 		.def(py::init<int, int>())
 		.def_readwrite("nx",&SemicForcings::nx)
@@ -59,17 +59,22 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("wind",&SemicForcings::wind)
         .def_readwrite("rhoa",&SemicForcings::rhoa)
         .def_readwrite("qq",&SemicForcings::qq);
+	 /* }}} */
 
-    py::class_<SemicResult>(m, "SemicResult")
-        .def_readwrite("smb", &SemicResult::smb)
+    py::class_<SemicResult>(m, "SemicResult") /* {{{ */
+        .def_readwrite("smb", &SemicResult::smb) 
         .def_readwrite("smb_ice", &SemicResult::smb_ice)
         .def_readwrite("melt", &SemicResult::melt)
         .def_readwrite("tsurf", &SemicResult::tsurf)
         .def_readwrite("alb", &SemicResult::alb)
         .def_readwrite("alb_snow", &SemicResult::alb_snow)
+        .def_readwrite("hsnow", &SemicResult::hsnow)
+        .def_readwrite("hice", &SemicResult::hice)
         .def_readwrite("output_request", &SemicResult::output_request)
+        .def_readwrite("output_list", &SemicResult::output_list)
         .def(py::init<int, int>())
         .def(py::init<>()); /* initialize constructor */
+	 /* }}} */
 
 	py::class_<SEMIC>(m, "SEMIC")
 	    .def_readwrite("Param",&SEMIC::Param)
@@ -106,6 +111,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("verbose",&SEMIC::verbose)
         .def_readwrite("n_ksub",&SEMIC::n_ksub)
 		.def_readwrite("num_threads",&SEMIC::num_threads)
+		.def_readwrite("output_request", &SEMIC::output_request)
 		.def("Initialize",&SEMIC::Initialize)
 		.def("Display",&SEMIC::Display)
 		.def("Albedo_Slater",&SEMIC::Albedo_Slater)

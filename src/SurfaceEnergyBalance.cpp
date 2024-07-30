@@ -765,16 +765,27 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 
     /* Variables for checking elapsed time */
     chrono::system_clock::time_point tstart;
-	chrono::duration<double> dt1, dt2, dt3;
+	 chrono::duration<double> dt1, dt2, dt3;
 
-	/* Check consistency*/
-	assert(this->nx == Forcings->nx);
+	 /* Check consistency*/
+	 assert(this->nx == Forcings->nx);
 
-    /* Initialize new Result class */
-    this->Result = new SemicResult(nx, ntime);
+    /* Initialize new Result class {{{ */
+    this->Result = new SemicResult(); /* Initialize emtpy array */
+	 if (this->Result->iscontain(this->output_request, "smb"))
+	     this->Result->smb = new DoubleMatrix(nx,ntime);
+	 if (this->Result->iscontain(this->output_request, "melt"))
+	     this->Result->melt = new DoubleMatrix(nx,ntime);
+	 if (this->Result->iscontain(this->output_request, "alb"))
+	     this->Result->alb= new DoubleMatrix(nx,ntime);
+	 if (this->Result->iscontain(this->output_request, "tsurf"))
+	     this->Result->tsurf= new DoubleMatrix(nx,ntime);
+	 if (this->Result->iscontain(this->output_request, "hsnow"))
+	     this->Result->hsnow= new DoubleMatrix(nx,ntime);
+	 /* }}} */
 
-	/* sub time stepping */
-	this->Param->tsticsub = this->Param->tstic/this->n_ksub;
+	 /* sub time stepping */
+	 this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
     for (int _nloop=0; _nloop<nloop; _nloop++){
         for (j = 0; j<ntime; j++){
@@ -818,10 +829,16 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
             /* Return output value */
             if (_nloop == nloop-1){
                 for (i=0; i<nx; i++){
-                    this->Result->smb->value[i][j]   = this->smb[i];
-                    this->Result->melt->value[i][j]  = this->melt[i];
-                    this->Result->tsurf->value[i][j] = this->tsurf[i];
-                    this->Result->alb->value[i][j]   = this->alb[i];
+						  if (this->Result->iscontain(this->output_request, "smb"))
+							  this->Result->smb->value[i][j]   = this->smb[i];
+						  if (this->Result->iscontain(this->output_request, "melt"))
+							  this->Result->melt->value[i][j]  = this->melt[i];
+						  if (this->Result->iscontain(this->output_request, "tsurf"))
+							  this->Result->tsurf->value[i][j] = this->tsurf[i];
+						  if (this->Result->iscontain(this->output_request, "alb"))
+							  this->Result->alb->value[i][j]   = this->alb[i];
+						  if (this->Result->iscontain(this->output_request, "hsnow"))
+							  this->Result->hsnow->value[i][j]   = this->hsnow[i];
                 }
             }
         }
