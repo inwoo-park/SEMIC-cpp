@@ -6,6 +6,10 @@ import pyseb
 import socket
 hostname = socket.gethostname().lower().replace('-','')
 
+# check memory usage
+from memory_profiler import profile
+import psutil
+
 def InitializeSEMIC(nx): # {{{
     # now calculate surface and enery balance
     print(f"   -- Load SEMIC module.")
@@ -172,16 +176,29 @@ def test_openmp(): # {{{
     print(f'num threads = {semic.GetOpenmpThreads()}')
     # }}}
 
+@profile
 def test_SemicForcings(): #{{{
-    a = 100*np.ones((10,365))
-    forcings = pyseb.SemicForcings(10,365)
+    '''test SemicForcings class.
+    '''
+    forcings = pyseb.SemicForcings()
 
-    forcings.sf[:] = a[:]
+    nx = 10000
+    ntime = 365
+    a = 100*np.ones((nx, ntime))
 
-    # print(forcings.sf[:])
+    # assign variable. 
+    forcings.t2m.set_value(a)
+    forcings.sf.set_value(a)
 
     # return shape
-    print(np.shape(forcings.sf[:]))
+    k = np.array(forcings.sf.get_value())
+    assert(np.shape(k) == (nx, ntime))
+
+    print('clear memory')
+    print('   clear a')
+    del a
+    print('   clear forcings')
+    del forcings
     # }}}
 
 def test_DoubleMatrix(): # {{{
@@ -457,13 +474,19 @@ if __name__ == '__main__':
     print('   Do main')
     #test_load()
     # test_load2d()
-    #test_load_parameters()
-    #test_LongwaveRadiation()
+    # test_load_parameters()
+    # test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
-    # test_SemicForcings()
+    proc = psutil.Process(os.getpid())
+    mem_before = proc.memory_info().rss / 1024**2
+    test_SemicForcings()
+    mem_after  = proc.memory_info().rss / 1024**2
+    print('Memory usage')
+    print(f'   before = {mem_before}')
+    print(f'   after  = {mem_after}')
     # test_openmp()
     # test_DoubleMatrix()
     # test_SemicForcings_ERA5()
-    #test_semic_openmp_ERA5()
-    test_OutputRequest()
+    # test_semic_openmp_ERA5()
+    # test_OutputRequest()
