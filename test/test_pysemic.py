@@ -245,7 +245,7 @@ def test_Semic(): # {{{
     s = pyseb.SEMIC()
     s.Initialize(nx)
     s.output_request = ['smb','melt','alb','tsurf','hsnow']
-    #s.InitializeSemicResult(nx, ntime)
+    s.InitializeSemicResult(nx, ntime)
 
     s.Result.smb.set_value_python(a)
     s.Result.melt.set_value_python(a)
@@ -253,15 +253,14 @@ def test_Semic(): # {{{
     s.Result.tsurf.set_value_python(a)
     s.Result.hsnow.set_value_python(a)
 
-    #tmp1 = s.Result.smb.get_value_python()
-    #tmp2 = s.Result.melt.get_value_python()
+    tmp1 = s.Result.smb.get_value_python()
+    tmp2 = s.Result.melt.get_value_python()
 
-    #print(tmp1[0,0])
-    #print(tmp2[0,0])
+    print(tmp1[0,0])
+    print(tmp2[0,0])
 
-    #del tmp1
-    #del tmp2
-    #s.Result.free_memory()
+    del tmp1
+    del tmp2
     del a
     del s
     # }}}
