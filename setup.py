@@ -37,14 +37,14 @@ ext_modules = [
         Pybind11Extension(
             'pyseb.libpysemic', # install libpysemic in "pyseb" directory.
             ['src/libpysemic.cpp','src/SurfaceEnergyBalance.cpp'],
-            define_macros=[('VERSION_INFO',__version__), ('HAVE_PYBIND11',1), ('HAVE_DEBUG',1)],
+            define_macros=[('VERSION_INFO',__version__), ('HAVE_PYBIND11',1)],
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_compile_args,
         ),
         Pybind11Extension(
             'pyseb.libexample', # install libpysemic in "pyseb" directory.
             ['src/libexample.cpp'],
-            define_macros=[('VERSION_INFO',__version__), ('HAVE_PYBIND11', 1), ('HAVE_DEBUG',1)],
+            define_macros=[('VERSION_INFO',__version__), ('HAVE_PYBIND11', 1)],
             extra_compile_args=extra_compile_args,
             extra_link_args=extra_compile_args,
         ),
