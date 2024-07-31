@@ -24,7 +24,7 @@ class SemicParameters{ /* {{{ */
 		
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
-		DoubleVector *amp;   /* Amplitude of diuranl cycle [unit: K] */
+		DoubleVector amp;   /* Amplitude of diuranl cycle [unit: K] */
 		double csh;   /* Sensible heat exchange coefficient */
 		double clh;   /* Latent heat exchange coefficient [no unit] */
 		
@@ -46,10 +46,10 @@ class SemicParameters{ /* {{{ */
 		// double cap;   /* air specific heat capacity */
 
         SemicParameters(){
-            this->amp = new DoubleVector();
+            this->amp = DoubleVector(0, 0.0);
         }
         ~SemicParameters(){
-            delete this->amp;
+            this->amp.clear();
         }
 }; /* }}} */
 

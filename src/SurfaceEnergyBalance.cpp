@@ -17,8 +17,8 @@ SEMIC::SEMIC(void){ /*{{{*/
 	this->SetOpenmpThreads(1); /* default setting with single cpu usage.*/
 } /*}}}*/
 SEMIC::~SEMIC(void){ /*{{{*/
-	 delete this->Param;
-	 delete this->Const;
+	delete this->Param;
+	delete this->Const;
     delete this->Result;
 } /*}}}*/
 
