@@ -112,6 +112,9 @@ class SEMIC{ /* {{{ */
 		double 	ew_sat(double t);
 		double 	ei_sat(double t);
 
+		/* Dummy part */
+		void		InitializeSemicResult(int nx, int ntime);
+
 		/* Go Solve!*/
 		void  	RunEnergyBalance();
 		void	RunMassBalance();

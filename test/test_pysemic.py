@@ -180,44 +180,139 @@ def test_openmp(): # {{{
 def test_SemicForcings(): #{{{
     '''test SemicForcings class.
     '''
-    forcings = pyseb.SemicForcings()
-
     nx = 10000
     ntime = 365
-    a = 100*np.ones((nx, ntime))
+    #a = 100*np.ones((nx, ntime),dtype=float)
+    a = np.random.random((nx, ntime))
+
+    if 0: # this process cannot clear the memory
+        forcings = pyseb.SemicForcings(nx, ntime)
+        forcings.t2m.set_value(1.0)
+        forcings.sf.set_value(2.0)
+        forcings.rf.set_value(3.0)
+
+        forcings.t2m.set_value(a)
+        forcings.wind.set_value(a)
+
+        tmp = forcings.wind.get_value_python()
+        del tmp
+        del forcings
+
+    # initialize empty array
+    forcings = pyseb.SemicForcings()
+    assert(forcings.t2m.nrow == 0)
+    assert(forcings.t2m.ncol == 0)
+    print('Shape of t2m')
+    print(forcings.t2m.nrow, forcings.t2m.ncol)
 
     # assign variable. 
     forcings.t2m.set_value(a)
     forcings.sf.set_value(a)
+    forcings.rf.set_value(a)
 
-    # return shape
-    k = np.array(forcings.sf.get_value())
-    assert(np.shape(k) == (nx, ntime))
+    print('Shape of t2m')
+    print(forcings.t2m.nrow, forcings.t2m.ncol)
 
-    print('clear memory')
-    print('   clear a')
+    t2m = forcings.t2m.get_value_python()
+    rf  = forcings.rf.get_value_python()
+    assert(np.all(a == t2m))
     del a
-    print('   clear forcings')
+    del t2m
+    del rf
     del forcings
+
+    if 0:
+        # return shape
+        k = forcings.sf.get_value()
+        assert(np.shape(k) == (nx, ntime))
+
+        print('clear memory')
+        print('   clear a')
+        del a
+        del k
+        print('   clear forcings')
+        del forcings
     # }}}
 
+@profile
+def test_Semic(): # {{{
+    nx = 10000
+    ntime = 365*2
+
+    a = np.random.random((nx, ntime))
+
+    # load semic module
+    s = pyseb.SEMIC()
+    s.Initialize(nx)
+    s.output_request = ['smb','melt','alb','tsurf','hsnow']
+    #s.InitializeSemicResult(nx, ntime)
+
+    s.Result.smb.set_value_python(a)
+    s.Result.melt.set_value_python(a)
+    s.Result.alb.set_value_python(a)
+    s.Result.tsurf.set_value_python(a)
+    s.Result.hsnow.set_value_python(a)
+
+    #tmp1 = s.Result.smb.get_value_python()
+    #tmp2 = s.Result.melt.get_value_python()
+
+    #print(tmp1[0,0])
+    #print(tmp2[0,0])
+
+    #del tmp1
+    #del tmp2
+    #s.Result.free_memory()
+    #del a
+    #del s
+    # }}}
+
+@profile
 def test_DoubleMatrix(): # {{{
     # initialize 2d array.
-    b = 10*np.ones((10,2))
-    c = 100*np.ones((10,))
+    nrow = 1000
+    ncol = 5000
+
+    b = np.random.random((nrow, ncol))
+    a = pyseb.DoubleMatrix()
+    a.set_value(b)
+    tmp = a.get_value_python()
+    del tmp
+    del a
+    del b
+
+    # step1
+    b = 10*np.ones((nrow, ncol))
+    a = pyseb.DoubleMatrix(nrow, ncol)
+    a.set_value(b)
+    tmp = a.get_value_python()
+
+    del tmp
+    del a
+    del b
+
+    # step2
+    b = 10*np.ones((nrow, ncol))
     a = pyseb.DoubleMatrix(b)
+    tmp = a.get_value_python()
 
-    # get values.
-    print(f'a[:,0] = {a[:,0]}')
-    print(f'a[0,:] = {a[0,:]}')
-    print(f'a[:] = {a[:]}')
-    
-    # set values
-    a[:,0] = c[:]
-    print(a[:,0], a[:,1])
+    del tmp
+    del a
+    del b
 
-    # replace all values.
-    a[:] = b[:]
+    # step3
+    a = pyseb.DoubleMatrix(nrow, ncol)
+    a.set_value(1.0)
+    tmp = a.get_value_python()
+    del tmp
+    del a
+
+    # step4
+    b = 10*np.ones((nrow, ncol),dtype=float)
+    a = pyseb.DoubleMatrix(b)
+    tmp = a.get_value_python()
+    del tmp
+    del a
+    del b
     # }}}
 
 @pytest.mark.skip(reason='Skip loading 2d array')
@@ -478,15 +573,27 @@ if __name__ == '__main__':
     # test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
+
+    if 0:
+        proc = psutil.Process(os.getpid())
+        mem_before = proc.memory_info().rss / 1024**2
+        test_SemicForcings()
+        mem_after  = proc.memory_info().rss / 1024**2
+        print('Memory usage')
+        print(f'   before = {mem_before}')
+        print(f'   after  = {mem_after}')
+
     proc = psutil.Process(os.getpid())
     mem_before = proc.memory_info().rss / 1024**2
-    test_SemicForcings()
+    test_Semic()
+
     mem_after  = proc.memory_info().rss / 1024**2
     print('Memory usage')
     print(f'   before = {mem_before}')
     print(f'   after  = {mem_after}')
+
     # test_openmp()
-    # test_DoubleMatrix()
+    #test_DoubleMatrix()
     # test_SemicForcings_ERA5()
     # test_semic_openmp_ERA5()
     # test_OutputRequest()

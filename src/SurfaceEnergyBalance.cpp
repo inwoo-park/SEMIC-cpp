@@ -17,9 +17,9 @@ SEMIC::SEMIC(void){ /*{{{*/
 	this->SetOpenmpThreads(1); /* default setting with single cpu usage.*/
 } /*}}}*/
 SEMIC::~SEMIC(void){ /*{{{*/
-	delete Param;
-	delete Const;
-    delete Result;
+	 delete this->Param;
+	 delete this->Const;
+    delete this->Result;
 } /*}}}*/
 
 void SEMIC::Initialize(int nx){ /* {{{ */
@@ -414,6 +414,32 @@ double SEMIC::ei_sat(double t){/*{{{*/
 	fsat = 611.2 * exp(22.46 * (t-T0) /(272.62+t-T0));
 	return fsat;
 }/*}}}*/
+
+void SEMIC::InitializeSemicResult(int nx, int ntime){ /* {{{ */
+    /* Initialize new Result class {{{ */
+	// if (!this->Result)
+	//	 this->Result = new SemicResult(); /* Initialize emtpy array */
+
+	 cout << "InitializeSemicResult: Use output array with set_dimension.\n";
+
+    if (this->Result->iscontain(this->output_request, "smb"))
+		  cout << "InitializeSemicResult: set smb array\n";
+        //this->Result->smb = new DoubleMatrix(nx,ntime);
+        this->Result->smb->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "melt"))
+        //this->Result->melt = new DoubleMatrix(nx,ntime);
+        this->Result->melt->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "alb"))
+        //this->Result->alb= new DoubleMatrix(nx,ntime);
+        this->Result->alb->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "tsurf"))
+        //this->Result->tsurf= new DoubleMatrix(nx,ntime);
+        this->Result->tsurf->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "hsnow"))
+        //this->Result->hsnow= new DoubleMatrix(nx,ntime);
+        this->Result->hsnow->set_dimension(nx,ntime);
+	 /* }}} */
+} /* }}} */
 
 void SEMIC::RunEnergyBalance() { /* {{{ */
 	/* Calculate surface energy balance */

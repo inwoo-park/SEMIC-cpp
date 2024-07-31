@@ -7,7 +7,12 @@ def test_SemicResult():
     ntime = 365
     result = pyseb.SemicResult()
 
-    print(result.output_request)
+    output_request = result.output_request
+    output_list    = result.output_list
+
+    print(f"output list = {output_list}")
+
+    print("Done!")
 
 if __name__ == '__main__':
     test_SemicResult()

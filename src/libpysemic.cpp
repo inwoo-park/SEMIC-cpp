@@ -46,8 +46,6 @@ PYBIND11_MODULE(libpysemic, m){
 	/*}}}*/
 
 	py::class_<SemicForcings>(m, "SemicForcings") /* {{{ */
-        .def(py::init<>())
-		.def(py::init<int, int>())
 		.def_readwrite("nx",&SemicForcings::nx)
 		.def_readwrite("ntime",&SemicForcings::ntime)
 		.def_readwrite("sf",&SemicForcings::sf)
@@ -58,7 +56,10 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("swd",&SemicForcings::swd)
 		.def_readwrite("wind",&SemicForcings::wind)
         .def_readwrite("rhoa",&SemicForcings::rhoa)
-        .def_readwrite("qq",&SemicForcings::qq);
+        .def_readwrite("qq",&SemicForcings::qq)
+        .def("Initialize", &SemicForcings::Initialize)
+        .def(py::init<>())
+		.def(py::init<int, int>());
 	 /* }}} */
 
     py::class_<SemicResult>(m, "SemicResult") /* {{{ */
@@ -72,6 +73,7 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("hice", &SemicResult::hice)
         .def_readwrite("output_request", &SemicResult::output_request)
         .def_readwrite("output_list", &SemicResult::output_list)
+		  .def("free_memory", &SemicResult::free_memory)
         .def(py::init<int, int>())
         .def(py::init<>()); /* initialize constructor */
 	 /* }}} */
@@ -118,6 +120,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("Albedo_Denby",&SEMIC::Albedo_Denby)
 		.def("Albedo_ISBA",&SEMIC::Albedo_ISBA)
 		.def("LongwaveRadiationUp",(void (SEMIC::*)(void))&SEMIC::LongwaveRadiationUp)
+		.def("InitializeSemicResult", (void (SEMIC::*)(int, int)) &SEMIC::InitializeSemicResult)
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
 		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(void))&SEMIC::RunEnergyAndMassBalance)
@@ -131,18 +134,23 @@ PYBIND11_MODULE(libpysemic, m){
         // .def(py::init<int, int>());
         .def(py::init<>());
 
-	py::class_<DoubleMatrix>(m, "DoubleMatrix")
+	py::class_<DoubleMatrix>(m, "DoubleMatrix") /* {{{ */
         .def_readwrite("nrow", &DoubleMatrix::nrow)
         .def_readwrite("ncol", &DoubleMatrix::ncol)
         .def("get_column", &DoubleMatrix::get_column_vector)
         .def("get_row", &DoubleMatrix::get_row_vector)
         .def("set_value", (void (DoubleMatrix::*)(const vector<vector<double>>&)) &DoubleMatrix::set_value)
-	    .def("set_value", (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
-        .def("get_value", &DoubleMatrix::get_value)
+	    .def("set_value",        (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
+	    .def("set_value_python", &DoubleMatrix::set_value_python)
+        //.def("get_value", &DoubleMatrix::get_value)
+        .def("get_value",        &DoubleMatrix::get_value, py::return_value_policy::copy)
+        .def("get_value_python", &DoubleMatrix::get_value_python, py::return_value_policy::copy)
         .def("sum", (double (DoubleMatrix::*)(void)) &DoubleMatrix::sum)
-	    .def("mean", (double (DoubleMatrix::*)(void)) &DoubleMatrix::mean)
+	     .def("mean", (double (DoubleMatrix::*)(void)) &DoubleMatrix::mean)
+		  .def("Destroy", &DoubleMatrix::Destroy)
         .def(py::init<>())
         .def(py::init<const vector<vector<double>>&>())
+		  .def(py::init<py::array_t<double, py::array::c_style>& >())
         .def(py::init<int, int>()); /* Empty constructor */
 //         .def("__call__", static_cast<const double& (DoubleMatrix::*)(size_t, size_t) const>(&DoubleMatrix::operator()))
 //         .def("__call__", static_cast<double& (DoubleMatrix::*)(size_t, size_t)>(&DoubleMatrix::operator()))
@@ -263,4 +271,5 @@ PYBIND11_MODULE(libpysemic, m){
 //                 }
 //             }
 //         });
+    /* }}} */
 }

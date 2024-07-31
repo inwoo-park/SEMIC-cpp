@@ -22,6 +22,7 @@ set(PYSEMIC libpysemic)
 
 option(USE_OPENMP "Use OpenMP for parallelization" ON)
 option(use_pybind11 "Use pybind11" ON)
+option(USE_DEBUG "Use debugging" ON)
 
 # Find OpenMP package.
 if (USE_OPENMP)
@@ -59,6 +60,10 @@ add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
 
 if (use_pybind11)
 	pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
+	target_compile_definitions(${PYSEMIC} PRIVATE HAVE_PYBIND11)
+	if (USE_DEBUG)
+		target_compile_definitions(${PYSEMIC} PRIVATE HAVE_DEBUG)
+	endif()
 	if (USE_OPENMP AND OpenMP_CXX_FOUND)
 		target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
 		target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)

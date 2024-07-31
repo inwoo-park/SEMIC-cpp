@@ -67,22 +67,24 @@ public:
 
 class SemicForcings{ /* {{{ */
 	public:
-		int nx; /* numer of grid*/
-		int ntime; /* number of time step */
+		int nx=0; /* numer of grid*/
+		int ntime=0; /* number of time step */
 
 		/* set variables */
-		DoubleMatrix *sf;     /* snowfall [w.e. m s-1] */
-		DoubleMatrix *rf;     /* rainfall [w.e. m s-1] */
-		DoubleMatrix *t2m;    /* surface 2-m air temperature [unit: K]*/
-		DoubleMatrix *sp;     /* Surface pressure [Pa] */
-		DoubleMatrix *lwd;    /* Long-wave radiation downward direction [W m-2] */
-		DoubleMatrix *swd;    /* Short-wave radiation downward direction [W m-2] */
-		DoubleMatrix *wind;   /* Surface wind speed [m s-1] */
-		DoubleMatrix *rhoa;   /* Air density [kg m-3] */
-		DoubleMatrix *qq;     /* air specific humidity [kg kg-1] */	
+		DoubleMatrix *sf   = new DoubleMatrix();  /* snowfall [w.e. m s-1] */
+		DoubleMatrix *rf   = new DoubleMatrix();  /* rainfall [w.e. m s-1] */
+		DoubleMatrix *t2m  = new DoubleMatrix();  /* surface 2-m air temperature [unit: K]*/
+		DoubleMatrix *sp   = new DoubleMatrix();  /* Surface pressure [Pa] */
+		DoubleMatrix *lwd  = new DoubleMatrix();  /* Long-wave radiation downward direction [W m-2] */
+		DoubleMatrix *swd  = new DoubleMatrix();  /* Short-wave radiation downward direction [W m-2] */
+		DoubleMatrix *wind = new DoubleMatrix();  /* Surface wind speed [m s-1] */
+		DoubleMatrix *rhoa = new DoubleMatrix();  /* Air density [kg m-3] */
+		DoubleMatrix *qq   = new DoubleMatrix();  /* air specific humidity [kg kg-1] */	
 
 		/* Initialize constructor and destructor. */
-        SemicForcings(): nx(0), ntime(0),
+		SemicForcings() {}
+		/*
+		SemicForcings(): nx(0), ntime(0),
             sf(new DoubleMatrix()),
             rf(new DoubleMatrix()),
             t2m(new DoubleMatrix()),
@@ -93,37 +95,65 @@ class SemicForcings{ /* {{{ */
             rhoa(new DoubleMatrix()),
             qq(new DoubleMatrix())            
             {}
+		*/
 
-		SemicForcings(int nx, int ntime){
-			this->nx = nx;
-			this->ntime = ntime;
+		SemicForcings(int nx, int ntime):
+				nx(nx), ntime(ntime),
+            sf(new DoubleMatrix(nx, ntime)),
+            rf(new DoubleMatrix(nx, ntime)),
+            t2m(new DoubleMatrix(nx, ntime)),
+            sp(new DoubleMatrix(nx, ntime)),
 
-            this->sf  = new DoubleMatrix(nx, ntime);
-            this->rf  = new DoubleMatrix(nx, ntime);
-            this->t2m = new DoubleMatrix(nx, ntime);
+            lwd(new DoubleMatrix(nx, ntime)),
+            swd(new DoubleMatrix(nx, ntime)),
+            wind(new DoubleMatrix(nx, ntime)),
+            rhoa(new DoubleMatrix(nx, ntime)),
+            qq(new DoubleMatrix(nx, ntime)) {}
+			//this->nx = nx;
+			//this->ntime = ntime;
 
-            this->sp  = new DoubleMatrix(nx, ntime);
-            this->lwd = new DoubleMatrix(nx, ntime);
-            this->swd = new DoubleMatrix(nx, ntime);
+         //sf  = new DoubleMatrix(nx, ntime);
+         //rf  = new DoubleMatrix(nx, ntime);
+         //t2m = new DoubleMatrix(nx, ntime);
 
-            this->wind = new DoubleMatrix(nx, ntime);
-            this->rhoa = new DoubleMatrix(nx, ntime);
-            this->qq = new DoubleMatrix(nx, ntime);
-		}
+         //sp  = new DoubleMatrix(nx, ntime);
+         //lwd = new DoubleMatrix(nx, ntime);
+         //swd = new DoubleMatrix(nx, ntime);
+
+         //wind = new DoubleMatrix(nx, ntime);
+         //rhoa = new DoubleMatrix(nx, ntime);
+         //qq = new DoubleMatrix(nx, ntime);
 		
         /* Deconstructor */
 		~SemicForcings(){
             delete this->sf;
             delete this->rf;
             delete this->t2m;
-
             delete this->sp;
+
 				delete this->lwd;
 				delete this->swd;
             delete this->wind;
 				delete this->rhoa;
 				delete this->qq;
         }
+
+		void Initialize(int nx, int ntime){ /* {{{ */
+			this->nx = nx;
+			this->ntime = ntime;
+
+         this->sf  = new DoubleMatrix(nx, ntime);
+         this->rf  = new DoubleMatrix(nx, ntime);
+         this->t2m = new DoubleMatrix(nx, ntime);
+
+         this->sp  = new DoubleMatrix(nx, ntime);
+         this->lwd = new DoubleMatrix(nx, ntime);
+         this->swd = new DoubleMatrix(nx, ntime);
+
+         this->wind = new DoubleMatrix(nx, ntime);
+         this->rhoa = new DoubleMatrix(nx, ntime);
+         this->qq   = new DoubleMatrix(nx, ntime);
+		}; /* }}} */
 }; /* }}} */
 
 class SemicResult{ /* {{{ */
@@ -186,17 +216,26 @@ class SemicResult{ /* {{{ */
         } /* }}} */
 
         ~SemicResult(){ /* {{{ */
-			   //cout << "Destroy memory!\n";
-			   //cout << "Destroy memory: smb\n";
-            //if (this->smb)
-                delete this->smb;
-			   //cout << "Destroy memory: smb_ice\n";
+#ifdef HAVE_DEBUG
+			   cout << "SemicResult: Destroy memory!\n";
+#endif
+            ////if (this->smb)
+            //    delete this->smb;
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_ice\n";
+#endif
             //if (this->smb_ice)
                 delete this->smb_ice;
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_snow\n";
+#endif
             //if (this->smb_snow)
                 delete this->smb_snow;
 
 			   //cout << "Destroy memory: alb\n";
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: alb\n";
+#endif
             //if (this->alb)
                 delete this->alb;
 
@@ -204,10 +243,48 @@ class SemicResult{ /* {{{ */
                 delete this->alb_snow;
 
             //if (this->melt)
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_melt\n";
+#endif
                 delete this->melt;
             //if (this->tsurf)
                 delete this->tsurf;
+
+			   //cout << "SemicResult: Destroy memory: smb\n";
+				//this->smb->value.clear();
+			   //cout << "SemicResult: Destroy memory: smb_ice\n";
+				//this->smb_ice->value.clear();
+				//this->smb_snow->value.clear();
+				//this->tsurf->value.clear();
         } /* }}} */
+
+		  void free_memory(){
+#ifdef HAVE_DEBUG
+			   cout << "SemicResult: Destroy memory!\n";
+#endif
+
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_ice\n";
+#endif
+				 delete this->smb_ice;
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_snow\n";
+#endif
+				 delete this->smb_snow;
+
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: alb\n";
+#endif
+				 delete this->alb;
+
+				 delete this->alb_snow;
+
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: smb_melt\n";
+#endif
+				 delete this->melt;
+				 delete this->tsurf;
+		  }
 
 		   /* search if specific string in string array */
 		   bool iscontain(vector<string> list, string value){
