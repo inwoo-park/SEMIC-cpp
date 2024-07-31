@@ -138,8 +138,8 @@ class SemicForcings{ /* {{{ */
          this->sf  = new DoubleMatrix(nx, ntime);
          this->rf  = new DoubleMatrix(nx, ntime);
          this->t2m = new DoubleMatrix(nx, ntime);
-
          this->sp  = new DoubleMatrix(nx, ntime);
+
          this->lwd = new DoubleMatrix(nx, ntime);
          this->swd = new DoubleMatrix(nx, ntime);
 

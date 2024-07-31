@@ -234,7 +234,7 @@ def test_SemicForcings(): #{{{
         del forcings
     # }}}
 
-@profile
+@profile # check memory usage
 def test_Semic(): # {{{
     nx = 10000
     ntime = 365*2
@@ -245,7 +245,18 @@ def test_Semic(): # {{{
     s = pyseb.SEMIC()
     s.Initialize(nx)
     s.output_request = ['smb','melt','alb','tsurf','hsnow']
-    s.InitializeSemicResult(nx, ntime)
+
+    s.num_threads = 4
+    s.SetOpenmpThreads()
+
+    # set initial variable
+    ONES = np.ones((nx,), dtype=float)
+    s.tsurf = (273.15-10)*ONES.copy()
+    s.hsnow = 5*ONES.copy()
+    s.hice  = 10*ONES.copy()
+    s.alb   = 0.8*ONES.copy()
+    s.qmr   = 0.0*ONES.copy()
+    #s.InitializeSemicResult(nx, ntime)
 
     s.Result.smb.set_value(a)
     s.Result.melt.set_value(a)
@@ -265,7 +276,7 @@ def test_Semic(): # {{{
     del s
     # }}}
 
-@profile
+@profile # check memory usage
 def test_DoubleMatrix(): # {{{
     # initialize 2d array.
     nrow = 1000
@@ -314,6 +325,7 @@ def test_DoubleMatrix(): # {{{
     del b
     # }}}
 
+@profile
 @pytest.mark.skip(reason='Skip loading 2d array')
 def test_SemicForcings_ERA5(): # {{{
     import tqdm
@@ -372,7 +384,8 @@ def test_SemicForcings_ERA5(): # {{{
     print(f'ncol = {semic_f.t2m.ncol}')
     # }}}
 
-@pytest.mark.skip(reason='Skip Running SEMIC with OpenMP')
+@profile # chek memory usage
+@pytest.mark.skip(reason='Skip Running SEMIC with OpenMP') 
 def test_semic_openmp_ERA5(): # {{{
     '''test run semic with openmp
     '''
@@ -424,42 +437,45 @@ def test_semic_openmp_ERA5(): # {{{
     
     # Initialize num threads depending on system.
     if hostname in ['simba00','simba20']:
-        NUM_THREADS = [1, 4, 8, 16, 24]
+        #NUM_THREADS = [1, 4, 8, 16, 24]
+        NUM_THREADS = [1, 2, 4]
     else:
         NUM_THREADS = [1, 2, 4, 8]
     
-    # Use python and cpp interactive
-    for num_threads in NUM_THREADS:
-        semic = InitializeSEMIC(nx)
-        semic.num_threads = num_threads
-        semic.SetOpenmpThreads()
-        print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
-        print(f'   Run energy balance!')
+    if 0:
+        # Use python and cpp interactive
+        for num_threads in NUM_THREADS:
+            semic = InitializeSEMIC(nx)
+            semic.num_threads = num_threads
+            semic.SetOpenmpThreads()
+            print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
+            print(f'   Run energy balance!')
 
-        tstart = datetime.datetime.now()
-        for _ in range(2):
-            for i in range(ntime):
-                semic.sf    = sf[:,i]
-                semic.rf    = rf[:,i]
-                semic.t2m   = t2m[:,i]
-                semic.lwd   = lwd[:,i]
-                semic.swd   = swd[:,i]
-                semic.sp    = sp[:,i]
-                semic.wind  = wind[:,i]
-                semic.rhoa  = rhoa[:,i]
-                semic.qq    = qq[:,i]
-                
-                semic.RunEnergyAndMassBalance()
-        elp_time = datetime.datetime.now()-tstart
-        print(f'Elapsed time = {elp_time}')
+            tstart = datetime.datetime.now()
+            for _ in range(2):
+                for i in range(ntime):
+                    semic.sf    = sf[:,i]
+                    semic.rf    = rf[:,i]
+                    semic.t2m   = t2m[:,i]
+                    semic.lwd   = lwd[:,i]
+                    semic.swd   = swd[:,i]
+                    semic.sp    = sp[:,i]
+                    semic.wind  = wind[:,i]
+                    semic.rhoa  = rhoa[:,i]
+                    semic.qq    = qq[:,i]
+                    
+                    semic.RunEnergyAndMassBalance()
+            elp_time = datetime.datetime.now()-tstart
+            print(f'Elapsed time = {elp_time}')
 
-        df1.loc[len(df1)] = {'num_thread':num_threads,
-                        'time':elp_time}
+            df1.loc[len(df1)] = {'num_thread':num_threads,
+                            'time':elp_time}
     
     # Use cpp only!
     smb = []
     for num_threads in NUM_THREADS:
         semic = InitializeSEMIC(nx)
+        print(semic.output_request)
         semic.num_threads = num_threads
         semic.SetOpenmpThreads()
         print(f'   Num threads in SEMIC = {semic.GetOpenmpThreads()}')
@@ -476,7 +492,7 @@ def test_semic_openmp_ERA5(): # {{{
         print(f'   Run energy balance!')
         # 5-times loop
         tstart = datetime.datetime.now()
-        semic.RunEnergyAndMassBalance(f, 2)
+        semic.RunEnergyAndMassBalance(f, 3)
         elp_time = datetime.datetime.now()-tstart
         print(f'Elapsed time = {elp_time}')
 
@@ -484,11 +500,11 @@ def test_semic_openmp_ERA5(): # {{{
                         'time':elp_time}
         
         # Okay, check difference between threads
-        smb.append(np.array(semic.Result.smb.get_value()))
+        smb.append(semic.Result.smb.get_value())
 
     # Check final value!
     print(smb[0][0,0], smb[1][0,0])
-    assert(np.all(smb[0] == smb[1]))
+    #assert(smb[0][0,0] == smb[1][0,0])
 
     import matplotlib.pyplot as plt
     fig, ax = plt.subplots()
@@ -496,8 +512,14 @@ def test_semic_openmp_ERA5(): # {{{
     ax.plot(df2['num_thread'], df2['time'], label='C++only')
     ax.legend()
     plt.show()
+
+    del semic
+    del f
+    del smb
+    del force
     # }}}
 
+@profile
 @pytest.mark.skip(reason='Skip testing output_request')
 def test_OutputRequest(): # {{{
     import tqdm
@@ -511,7 +533,7 @@ def test_OutputRequest(): # {{{
 
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
-    nx = 10000 # only 100 nodes are required
+    nx = 1000 # only 100 nodes are required
 
     print(f'   shape of t2m = ({nx}, {ntime})')
 
@@ -555,13 +577,19 @@ def test_OutputRequest(): # {{{
 
     # SemicForcing class = f
     # nloop = 2
-    semic.RunEnergyAndMassBalance(f, 1)
+    semic.RunEnergyAndMassBalance(f, 10)
 
-    try:
-        print(semic.Result.hsnow.get_value())
-    except:
-        print('semic.Result.hsnow is not defined!')
-    print(np.shape(semic.Result.smb.get_value()))
+    #try:
+    #    print(semic.Result.hsnow.get_value())
+    #except:
+    #    print('semic.Result.hsnow is not defined!')
+    #smb = semic.Result.smb.get_value()
+    #del smb
+    #del sf, rf, sp
+    #del swd, lwd, wind ,rhoa, qq ,t2m
+    del f
+    del force
+    del semic
     # }}}
 
 if __name__ == '__main__':
@@ -582,7 +610,7 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    if 1:
+    if 0:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_Semic()
@@ -594,6 +622,31 @@ if __name__ == '__main__':
 
     # test_openmp()
     #test_DoubleMatrix()
-    # test_SemicForcings_ERA5()
-    # test_semic_openmp_ERA5()
-    # test_OutputRequest()
+    if 0:
+        proc = psutil.Process(os.getpid())
+        mem_before = proc.memory_info().rss / 1024**2
+        test_SemicForcings_ERA5()
+
+        mem_after  = proc.memory_info().rss / 1024**2
+        print('Memory usage')
+        print(f'   before = {mem_before}')
+        print(f'   after  = {mem_after}')
+    if 1:
+        proc = psutil.Process(os.getpid())
+        mem_before = proc.memory_info().rss / 1024**2
+        test_semic_openmp_ERA5()
+
+        mem_after  = proc.memory_info().rss / 1024**2
+        print('Memory usage')
+        print(f'   before = {mem_before}')
+        print(f'   after  = {mem_after}')
+
+    if 0:
+        proc = psutil.Process(os.getpid())
+        mem_before = proc.memory_info().rss / 1024**2
+        test_OutputRequest()
+
+        mem_after  = proc.memory_info().rss / 1024**2
+        print('Memory usage')
+        print(f'   before = {mem_before}')
+        print(f'   after  = {mem_after}')

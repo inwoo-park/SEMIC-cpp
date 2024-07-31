@@ -140,7 +140,7 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("ncol", &DoubleMatrix::ncol)
         .def("get_column", &DoubleMatrix::get_column_vector)
         .def("get_row", &DoubleMatrix::get_row_vector)
-        .def("set_value", (void (DoubleMatrix::*)(const vector<vector<double>>&)) &DoubleMatrix::set_value)
+        //.def("set_value", (void (DoubleMatrix::*)(const vector<vector<double>>&)) &DoubleMatrix::set_value)
 	     .def("set_value", (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
 	     .def("set_value", (void (DoubleMatrix::*)(py::array_t<double>&)) &DoubleMatrix::set_value_python)
 	    //.def("set_value_python", &DoubleMatrix::set_value_python)

@@ -19,7 +19,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 SEMIC::~SEMIC(void){ /*{{{*/
 	delete this->Param;
 	delete this->Const;
-    delete this->Result;
+   delete this->Result;
 } /*}}}*/
 
 void SEMIC::Initialize(int nx){ /* {{{ */
@@ -805,19 +805,22 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
     /* Initialize new Result class {{{ */
     this->Result = new SemicResult(); /* Initialize emtpy array */
     if (this->Result->iscontain(this->output_request, "smb"))
-        this->Result->smb = new DoubleMatrix(nx,ntime);
+        this->Result->smb->set_dimension(nx, ntime);
     if (this->Result->iscontain(this->output_request, "melt"))
-        this->Result->melt = new DoubleMatrix(nx,ntime);
+        this->Result->melt->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "alb"))
-        this->Result->alb= new DoubleMatrix(nx,ntime);
+        this->Result->alb->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "tsurf"))
-        this->Result->tsurf= new DoubleMatrix(nx,ntime);
+        this->Result->tsurf->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "hsnow"))
-        this->Result->hsnow= new DoubleMatrix(nx,ntime);
+        this->Result->hsnow->set_dimension(nx,ntime);
 	 /* }}} */
 
 	 /* sub time stepping */
 	 this->Param->tsticsub = this->Param->tstic/this->n_ksub;
+
+	 DoubleVector sf, rf, sp;
+	 DoubleVector lwd, swd, wind, rhoa, t2m, qq;
 
     for (int _nloop=0; _nloop<nloop; _nloop++){
         for (j = 0; j<ntime; j++){
@@ -827,16 +830,36 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
             /* Update forcing varibales */
             if (this->verbose)
                 cout << "   Assign variable" << endl;
-            this->sf   = Forcings->sf->get_column_vector(j);
-            this->rf   = Forcings->rf->get_column_vector(j);
-            this->sp   = Forcings->sp->get_column_vector(j);
+            //copy(this->sf.begin(), this->sf.end(), back_inserter(Forcings->sf->get_column_vector(j)));
+            //copy(this->rf.begin(), this->rf.end(), back_inserter(Forcings->rf->get_column_vector(j)));
+            //copy(this->sp.begin(), this->sp.end(), back_inserter(Forcings->sp->get_column_vector(j)));
+            rf   = Forcings->rf->get_column_vector(j);
+            sf   = Forcings->sf->get_column_vector(j);
+            sp   = Forcings->sp->get_column_vector(j);
             
-            this->lwd  = Forcings->lwd->get_column_vector(j);
-            this->swd  = Forcings->swd->get_column_vector(j);
-            this->wind = Forcings->wind->get_column_vector(j);
-            this->rhoa = Forcings->rhoa->get_column_vector(j);
-            this->t2m  = Forcings->t2m->get_column_vector(j);
-            this->qq   = Forcings->qq->get_column_vector(j);
+            //copy(this->lwd.begin(), this->lwd.end(),   back_inserter(Forcings->lwd->get_column_vector(j)));
+            //copy(this->swd.begin(), this->swd.end(),   back_inserter(Forcings->swd->get_column_vector(j)));
+            //copy(this->wind.begin(), this->wind.end(), back_inserter(Forcings->wind->get_column_vector(j)));
+            //copy(this->rhoa.begin(), this->rhoa.end(), back_inserter(Forcings->rhoa->get_column_vector(j)));
+            //copy(this->t2m.begin(), this->t2m.end(),   back_inserter(Forcings->t2m->get_column_vector(j)));
+            //copy(this->qq.begin(), this->qq.end(),     back_inserter(Forcings->qq->get_column_vector(j)));
+            lwd  = Forcings->lwd->get_column_vector(j);
+            swd  = Forcings->swd->get_column_vector(j);
+            wind = Forcings->wind->get_column_vector(j);
+            rhoa = Forcings->rhoa->get_column_vector(j);
+            t2m  = Forcings->t2m->get_column_vector(j);
+            qq   = Forcings->qq->get_column_vector(j);
+
+				this->rf.assign(rf.begin(), rf.end());
+				this->sf.assign(sf.begin(), sf.end());
+				this->sp.assign(sp.begin(), sp.end());
+
+				this->lwd.assign(lwd.begin(), lwd.end());
+				this->swd.assign(swd.begin(), swd.end());
+				this->wind.assign(wind.begin(), wind.end());
+				this->rhoa.assign(rhoa.begin(), rhoa.end());
+				this->t2m.assign(t2m.begin(), t2m.end());
+				this->qq.assign(qq.begin(), qq.end());
         
 
             /* Now, use forcings variables! */
