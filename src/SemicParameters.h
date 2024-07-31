@@ -24,7 +24,7 @@ class SemicParameters{ /* {{{ */
 		
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
-		DoubleVector amp;   /* Amplitude of diuranl cycle [unit: K] */
+		DoubleVector *amp;   /* Amplitude of diuranl cycle [unit: K] */
 		double csh;   /* Sensible heat exchange coefficient */
 		double clh;   /* Latent heat exchange coefficient [no unit] */
 		
@@ -44,6 +44,13 @@ class SemicParameters{ /* {{{ */
 		// double clv;   /* latent heat of sublimation */
 		// double cls;   /* latent heat of vaporization */
 		// double cap;   /* air specific heat capacity */
+
+        SemicParameters(){
+            this->amp = new DoubleVector();
+        }
+        ~SemicParameters(){
+            delete this->amp;
+        }
 }; /* }}} */
 
 class SemicConstants{ /* {{{ */
@@ -109,21 +116,7 @@ class SemicForcings{ /* {{{ */
             wind(new DoubleMatrix(nx, ntime)),
             rhoa(new DoubleMatrix(nx, ntime)),
             qq(new DoubleMatrix(nx, ntime)) {}
-			//this->nx = nx;
-			//this->ntime = ntime;
-
-         //sf  = new DoubleMatrix(nx, ntime);
-         //rf  = new DoubleMatrix(nx, ntime);
-         //t2m = new DoubleMatrix(nx, ntime);
-
-         //sp  = new DoubleMatrix(nx, ntime);
-         //lwd = new DoubleMatrix(nx, ntime);
-         //swd = new DoubleMatrix(nx, ntime);
-
-         //wind = new DoubleMatrix(nx, ntime);
-         //rhoa = new DoubleMatrix(nx, ntime);
-         //qq = new DoubleMatrix(nx, ntime);
-		
+			
         /* Deconstructor */
 		~SemicForcings(){
             delete this->sf;
