@@ -213,8 +213,8 @@ def test_SemicForcings(): #{{{
     print('Shape of t2m')
     print(forcings.t2m.nrow, forcings.t2m.ncol)
 
-    t2m = forcings.t2m.get_value_python()
-    rf  = forcings.rf.get_value_python()
+    t2m = forcings.t2m.get_value()
+    rf  = forcings.rf.get_value()
     assert(np.all(a == t2m))
     del a
     del t2m
@@ -247,14 +247,14 @@ def test_Semic(): # {{{
     s.output_request = ['smb','melt','alb','tsurf','hsnow']
     s.InitializeSemicResult(nx, ntime)
 
-    s.Result.smb.set_value_python(a)
-    s.Result.melt.set_value_python(a)
-    s.Result.alb.set_value_python(a)
-    s.Result.tsurf.set_value_python(a)
-    s.Result.hsnow.set_value_python(a)
+    s.Result.smb.set_value(a)
+    s.Result.melt.set_value(a)
+    s.Result.alb.set_value(a)
+    s.Result.tsurf.set_value(a)
+    s.Result.hsnow.set_value(a)
 
-    tmp1 = s.Result.smb.get_value_python()
-    tmp2 = s.Result.melt.get_value_python()
+    tmp1 = s.Result.smb.get_value()
+    tmp2 = s.Result.melt.get_value()
 
     print(tmp1[0,0])
     print(tmp2[0,0])
@@ -274,7 +274,7 @@ def test_DoubleMatrix(): # {{{
     b = np.random.random((nrow, ncol))
     a = pyseb.DoubleMatrix()
     a.set_value(b)
-    tmp = a.get_value_python()
+    tmp = a.get_value()
     del tmp
     del a
     del b
@@ -582,14 +582,15 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    proc = psutil.Process(os.getpid())
-    mem_before = proc.memory_info().rss / 1024**2
-    test_Semic()
+    if 1:
+        proc = psutil.Process(os.getpid())
+        mem_before = proc.memory_info().rss / 1024**2
+        test_Semic()
 
-    mem_after  = proc.memory_info().rss / 1024**2
-    print('Memory usage')
-    print(f'   before = {mem_before}')
-    print(f'   after  = {mem_after}')
+        mem_after  = proc.memory_info().rss / 1024**2
+        print('Memory usage')
+        print(f'   before = {mem_before}')
+        print(f'   after  = {mem_after}')
 
     # test_openmp()
     #test_DoubleMatrix()
