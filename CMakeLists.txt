@@ -47,7 +47,15 @@ if (use_pybind11)
 		find_package(pybind11 REQUIRED PATHS ${PYBIND11_CMAKE_DIR})
 	elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
 		find_package(Python3 REQUIRED Interpreter Development)
-		find_package(pybind11 REQUIRED)
+		cmake_print_variables(Python3_EXECUTABLE)
+
+		execute_process(
+		COMMAND ${Python3_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
+			OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+			OUTPUT_STRIP_TRAILING_WHITESPACE
+		)
+		cmake_print_variables(PYBIND11_CMAKE_DIR)
+		find_package(pybind11 REQUIRED PATHS ${PYBIND11_CMAKE_DIR})
 	endif()
 endif()
 
