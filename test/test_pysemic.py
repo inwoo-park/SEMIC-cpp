@@ -262,8 +262,8 @@ def test_Semic(): # {{{
     #del tmp1
     #del tmp2
     #s.Result.free_memory()
-    #del a
-    #del s
+    del a
+    del s
     # }}}
 
 @profile

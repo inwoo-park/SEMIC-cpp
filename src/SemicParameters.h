@@ -131,11 +131,11 @@ class SemicForcings{ /* {{{ */
             delete this->t2m;
             delete this->sp;
 
-				delete this->lwd;
-				delete this->swd;
+            delete this->lwd;
+            delete this->swd;
             delete this->wind;
-				delete this->rhoa;
-				delete this->qq;
+            delete this->rhoa;
+            delete this->qq;
         }
 
 		void Initialize(int nx, int ntime){ /* {{{ */
@@ -159,7 +159,7 @@ class SemicForcings{ /* {{{ */
 class SemicResult{ /* {{{ */
     public:
         vector<string> output_request;
-		  vector<string> output_list = {"smb", "smb_snow","smb_ice",
+        vector<string> output_list = {"smb", "smb_snow","smb_ice",
 				"tsurf","melt","alb","hsnow","hice"};
         DoubleMatrix *smb;
         DoubleMatrix *smb_ice;
@@ -188,6 +188,9 @@ class SemicResult{ /* {{{ */
             this->hsnow = new DoubleMatrix();
             this->hice  = new DoubleMatrix();
 
+            this->subl = new DoubleMatrix();
+            this->evpl = new DoubleMatrix();
+
             /* Initialize output requests */
             this->output_request.push_back("smb");
             this->output_request.push_back("smb_snow");
@@ -213,52 +216,49 @@ class SemicResult{ /* {{{ */
             
             this->melt     = new DoubleMatrix(nrow, ncol);
             this->tsurf    = new DoubleMatrix(nrow, ncol);
+            this->hsnow    = new DoubleMatrix(nrow, ncol);
+            this->hice    = new DoubleMatrix(nrow, ncol);
+
+            this->subl = new DoubleMatrix(nrow, ncol);
+            this->evpl = new DoubleMatrix(nrow, ncol);
         } /* }}} */
 
         ~SemicResult(){ /* {{{ */
 #ifdef HAVE_DEBUG
-			   cout << "SemicResult: Destroy memory!\n";
+            cout << "SemicResult: Destroy memory!\n";
 #endif
-            ////if (this->smb)
-            //    delete this->smb;
-#ifdef HAVE_DEBUG
-			   cout << "Destroy memory: smb_ice\n";
-#endif
-            //if (this->smb_ice)
-                delete this->smb_ice;
-#ifdef HAVE_DEBUG
-			   cout << "Destroy memory: smb_snow\n";
-#endif
-            //if (this->smb_snow)
-                delete this->smb_snow;
 
-			   //cout << "Destroy memory: alb\n";
 #ifdef HAVE_DEBUG
-			   cout << "Destroy memory: alb\n";
+			   cout << "Destroy memory: smb, smb_ice, and smb_snow\n";
 #endif
-            //if (this->alb)
-                delete this->alb;
+            delete this->smb;
+            delete this->smb_ice;
+            delete this->smb_snow;
 
-            //if (this->alb_snow)
-                delete this->alb_snow;
-
-            //if (this->melt)
 #ifdef HAVE_DEBUG
-			   cout << "Destroy memory: smb_melt\n";
+            cout << "Destroy memory: alb\n";
 #endif
-                delete this->melt;
-            //if (this->tsurf)
-                delete this->tsurf;
 
-			   //cout << "SemicResult: Destroy memory: smb\n";
-				//this->smb->value.clear();
-			   //cout << "SemicResult: Destroy memory: smb_ice\n";
-				//this->smb_ice->value.clear();
-				//this->smb_snow->value.clear();
-				//this->tsurf->value.clear();
+            delete this->alb;
+            delete this->alb_snow;
+
+#ifdef HAVE_DEBUG
+			cout << "Destroy memory: melt\n";
+#endif
+            delete this->melt;
+            delete this->tsurf;
+
+            delete this->hsnow;
+            delete this->hice;
+
+#ifdef HAVE_DEBUG
+			cout << "Destroy memory: subl and evpl\n";
+#endif
+            delete this->subl;
+            delete this->evpl;
         } /* }}} */
 
-		  void free_memory(){
+        void free_memory(){
 #ifdef HAVE_DEBUG
 			   cout << "SemicResult: Destroy memory!\n";
 #endif
