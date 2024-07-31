@@ -3,6 +3,8 @@
 	"[python]": {
 	"editor.insertSpaces": true,
 	"editor.tabSize": 4
-	}
-	// "cmake.cmakePath": "/path/to/cmake"
+	},
+	"cmake.buildDirectory": "${workspaceFolder}/build",
+	"cmake.installPrefix": "${workspaceFolder}/install",
+	"cmake.sourceDirectory": "${workspaceFolder}"
 }
