@@ -788,7 +788,7 @@ void SEMIC::RunEnergyAndMassBalance(){ /*{{{*/
 	this->RunMassBalance();
 } /* }}} */
 
-void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ */
+void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ */
     /* Run SEMIC with SemicForcing class. */
 
 	int i, j;
@@ -797,19 +797,31 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 
     /* Variables for checking elapsed time */
     chrono::system_clock::time_point tstart;
-	 chrono::duration<double> dt1, dt2;
+    chrono::duration<double> dt1, dt2;
 
-	 /* Check consistency*/
-	 assert(this->nx == Forcings->nx);
+    /* Check consistency*/
+    assert(this->nx == Forcings->nx);
 
     /* Initialize new Result class {{{ */
-    this->Result = new SemicResult(); /* Initialize emtpy array */
-    if (this->Result->iscontain(this->output_request, "smb"))
+    // this->Result = new SemicResult(); /* Initialize emtpy array */
+    if (this->Result->iscontain(this->output_request, "smb")){
+#ifdef HAVE_DEBUG
+            cout << "SemicResults: Set SMB!\n";
+#endif
         this->Result->smb->set_dimension(nx, ntime);
-    if (this->Result->iscontain(this->output_request, "melt"))
+    }
+    if (this->Result->iscontain(this->output_request, "melt")){
+#ifdef HAVE_DEBUG
+            cout << "SemicResults: Set Melt!\n";
+#endif
         this->Result->melt->set_dimension(nx,ntime);
-    if (this->Result->iscontain(this->output_request, "alb"))
+    }
+    if (this->Result->iscontain(this->output_request, "alb")){
+#ifdef HAVE_DEBUG
+            cout << "SemicResults: Set Alb!\n";
+#endif
         this->Result->alb->set_dimension(nx,ntime);
+    }
     if (this->Result->iscontain(this->output_request, "tsurf"))
         this->Result->tsurf->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "hsnow"))
@@ -819,8 +831,8 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 	 /* sub time stepping */
 	 this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
-	 DoubleVector sf, rf, sp;
-	 DoubleVector lwd, swd, wind, rhoa, t2m, qq;
+	//  DoubleVector sf, rf, sp;
+	//  DoubleVector lwd, swd, wind, rhoa, t2m, qq;
 
     for (int _nloop=0; _nloop<nloop; _nloop++){
         for (j = 0; j<ntime; j++){
@@ -830,37 +842,28 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
             /* Update forcing varibales */
             if (this->verbose)
                 cout << "   Assign variable" << endl;
-            //copy(this->sf.begin(), this->sf.end(), back_inserter(Forcings->sf->get_column_vector(j)));
-            //copy(this->rf.begin(), this->rf.end(), back_inserter(Forcings->rf->get_column_vector(j)));
-            //copy(this->sp.begin(), this->sp.end(), back_inserter(Forcings->sp->get_column_vector(j)));
-            rf   = Forcings->rf->get_column_vector(j);
-            sf   = Forcings->sf->get_column_vector(j);
-            sp   = Forcings->sp->get_column_vector(j);
+            this->rf   = Forcings->rf->get_column_vector(j);
+            this->sf   = Forcings->sf->get_column_vector(j);
+            this->sp   = Forcings->sp->get_column_vector(j);
             
-            //copy(this->lwd.begin(), this->lwd.end(),   back_inserter(Forcings->lwd->get_column_vector(j)));
-            //copy(this->swd.begin(), this->swd.end(),   back_inserter(Forcings->swd->get_column_vector(j)));
-            //copy(this->wind.begin(), this->wind.end(), back_inserter(Forcings->wind->get_column_vector(j)));
-            //copy(this->rhoa.begin(), this->rhoa.end(), back_inserter(Forcings->rhoa->get_column_vector(j)));
-            //copy(this->t2m.begin(), this->t2m.end(),   back_inserter(Forcings->t2m->get_column_vector(j)));
-            //copy(this->qq.begin(), this->qq.end(),     back_inserter(Forcings->qq->get_column_vector(j)));
-            lwd  = Forcings->lwd->get_column_vector(j);
-            swd  = Forcings->swd->get_column_vector(j);
-            wind = Forcings->wind->get_column_vector(j);
-            rhoa = Forcings->rhoa->get_column_vector(j);
-            t2m  = Forcings->t2m->get_column_vector(j);
-            qq   = Forcings->qq->get_column_vector(j);
+            this->lwd  = Forcings->lwd->get_column_vector(j);
+            this->swd  = Forcings->swd->get_column_vector(j);
+            this->wind = Forcings->wind->get_column_vector(j);
+            this->rhoa = Forcings->rhoa->get_column_vector(j);
+            this->t2m  = Forcings->t2m->get_column_vector(j);
+            this->qq   = Forcings->qq->get_column_vector(j);
 
-				this->rf.assign(rf.begin(), rf.end());
-				this->sf.assign(sf.begin(), sf.end());
-				this->sp.assign(sp.begin(), sp.end());
-
-				this->lwd.assign(lwd.begin(), lwd.end());
-				this->swd.assign(swd.begin(), swd.end());
-				this->wind.assign(wind.begin(), wind.end());
-				this->rhoa.assign(rhoa.begin(), rhoa.end());
-				this->t2m.assign(t2m.begin(), t2m.end());
-				this->qq.assign(qq.begin(), qq.end());
-        
+            // #ifdef HAVE_DEBUG
+            //     if (j == 0 && _nloop == 0)
+            //     cout << "nrow and ncol = (" << Forcings->t2m->nrow << " " << Forcings->t2m->ncol << ")\n";
+            // #endif
+            
+            // #ifdef HAVE_DEBUG
+            //     /* check forcing varible */
+            //     if (_nloop == 0){
+            //         cout << "ntime = " << j << ", t2m[" << 0 << "] = " << this->t2m[0] <<  " Forcings->t2m[0] = " << Forcings->t2m->value[0][j] << endl;
+            //     }
+            // #endif
 
             /* Now, use forcings variables! */
             if (this->verbose) cout << "Run Energy Balance\n";
@@ -883,6 +886,10 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
 
             /* Return output value */
             if (_nloop == nloop-1){
+#ifdef HAVE_DEBUG
+                if (j == 0)
+                    cout << "Export Results!\n";
+#endif
                 for (i=0; i<nx; i++){
                     if (this->Result->iscontain(this->output_request, "smb"))
                         this->Result->smb->value[i][j]   = this->smb[i];
@@ -900,7 +907,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop){ /* {{{ 
     }
 } /* }}} */
 
-void SEMIC::RunEnergyAndMassBalance(SemicForcings *Forcings){ /* {{{ */
+void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings){ /* {{{ */
     /* Only run one-time */
     this->RunEnergyAndMassBalance(Forcings, 1);
 } /* }}} */

@@ -119,8 +119,8 @@ class SEMIC{ /* {{{ */
 		void  	RunEnergyBalance();
 		void	RunMassBalance();
 		void	RunEnergyAndMassBalance();
-		void 	RunEnergyAndMassBalance(SemicForcings *Forcings, int nloop);
-        void    RunEnergyAndMassBalance(SemicForcings *Forcings);
+		void 	RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop);
+        void    RunEnergyAndMassBalance(SemicForcings* Forcings);
 
         /* Set openmp environment. */
 		void 	SetOpenmpThreads();
