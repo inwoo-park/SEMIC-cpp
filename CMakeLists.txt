@@ -19,6 +19,7 @@ set(CMAKE_CXX_STANDARD 11)
 
 # Initialize variable.
 set(PYSEMIC libpysemic)
+set(libexample libexample)
 
 option(USE_OPENMP "Use OpenMP for parallelization" ON)
 option(use_pybind11 "Use pybind11" ON)
@@ -76,6 +77,11 @@ if (use_pybind11)
 		target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
 		target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)
 	endif()
+
+	pybind11_add_module(${libexample} src/libexample.cpp src/libexample.cpp)
+	if (USE_OPENMP AND OpenMP_CXX_FOUND)
+		target_link_libraries(${libexample} PRIVATE OpenMP::OpenMP_CXX)
+	endif()
 endif()
 
 # Initialize SEMIC
@@ -99,5 +105,6 @@ install(TARGETS SEMIC  DESTINATION bin)
 
 if (use_pybind11)
 	install(TARGETS ${PYSEMIC} DESTINATION lib)
-	install(TARGETS ${PYSEMIC} DESTINATION ../pyseb/)
+	install(TARGETS ${PYSEMIC} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb/)
+	install(TARGETS ${libexample} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb)
 endif()
