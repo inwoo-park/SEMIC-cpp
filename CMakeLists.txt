@@ -22,7 +22,7 @@ set(PYSEMIC libpysemic)
 
 option(USE_OPENMP "Use OpenMP for parallelization" ON)
 option(use_pybind11 "Use pybind11" ON)
-option(USE_DEBUG "Use debugging" ON)
+option(USE_DEBUG "Use debugging" OFF)
 
 # Find OpenMP package.
 if (USE_OPENMP)
