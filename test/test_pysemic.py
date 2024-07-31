@@ -24,9 +24,10 @@ def InitializeSEMIC(nx): # {{{
     semic.hice  = 10*ONES.copy()
     semic.alb   = 0.8*ONES.copy()
     semic.qmr   = 0.0*ONES.copy()
+    semic.qmr_res= 0.0*ONES.copy()
 
     # set initial parameter
-    semic.Param.amp = 2.0*np.ones((nx,))
+    semic.Param.amp = 2.0*np.ones((nx,),dtype=float)
     semic.verbose = False
 
     return semic
@@ -492,7 +493,7 @@ def test_semic_openmp_ERA5(): # {{{
         print(f'   Run energy balance!')
         # 5-times loop
         tstart = datetime.datetime.now()
-        semic.RunEnergyAndMassBalance(f, 3)
+        semic.RunEnergyAndMassBalance(f, 2)
         elp_time = datetime.datetime.now()-tstart
         print(f'Elapsed time = {elp_time}')
 
@@ -519,7 +520,7 @@ def test_semic_openmp_ERA5(): # {{{
     del force
     # }}}
 
-@profile
+# @profile
 @pytest.mark.skip(reason='Skip testing output_request')
 def test_OutputRequest(): # {{{
     import tqdm
@@ -533,7 +534,8 @@ def test_OutputRequest(): # {{{
 
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
-    nx = 1000 # only 100 nodes are required
+    nx   = 1 # only 100 nodes are required
+    ntime=10
 
     print(f'   shape of t2m = ({nx}, {ntime})')
 
@@ -564,21 +566,39 @@ def test_OutputRequest(): # {{{
     f.qq.set_value(qq)
     f.rhoa.set_value(rhoa)
 
+    t2m = f.t2m.get_value()
+    print(f't2m[0,0] = {t2m[0,0]}')
+
     # initialize semic!
     semic = InitializeSEMIC(nx)
     semic.num_threads = 4
     semic.SetOpenmpThreads()
+    semic.verbose = True
 
     # show default request output
     print(f'Request output = {semic.output_request}')
 
     # now, modify
-    semic.output_request = ['smb']
+    semic.output_request = ['smb','melt','tsurf']
 
     # SemicForcing class = f
     # nloop = 2
-    semic.RunEnergyAndMassBalance(f, 10)
+    print('Run semic!')
+    semic.RunEnergyAndMassBalance(f, 1)
 
+    smb = semic.Result.smb.get_value()
+    melt = semic.Result.melt.get_value()
+    tsurf = semic.Result.tsurf.get_value()
+    # smb2 = semic.Result.smb.get_value_list()
+    print(smb[0,0])
+    print(melt[0,0])
+    print(tsurf[0,0])
+    print(np.shape(smb))
+
+    # import matplotlib.pyplot as plt
+    # fig, ax = plt.subplots()
+    # ax.plot(np.arange(365), tsurf[0,:])
+    # plt.show()
     #try:
     #    print(semic.Result.hsnow.get_value())
     #except:
@@ -590,6 +610,7 @@ def test_OutputRequest(): # {{{
     del f
     del force
     del semic
+    del smb, melt
     # }}}
 
 if __name__ == '__main__':
@@ -631,7 +652,7 @@ if __name__ == '__main__':
         print('Memory usage')
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
-    if 1:
+    if 0:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_semic_openmp_ERA5()
@@ -641,7 +662,7 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    if 0:
+    if 1:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_OutputRequest()
