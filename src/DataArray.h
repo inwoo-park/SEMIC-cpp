@@ -170,6 +170,9 @@ class DoubleMatrix{
 
 		/* Set values. */
 		void set_value(const vector<vector<double>>& values){ /* {{{ */
+#ifdef HAVE_DEBUG
+            cout << "DoubleMatrix:: set value with vector<vector<double>>\n";
+#endif
 			/* Set array's value and matrix size */
 			if (this->nrow == 0 && this->ncol == 0){
 				this->nrow = (int)values.size();
@@ -218,6 +221,9 @@ class DoubleMatrix{
 		} /* }}} */
 #ifdef HAVE_PYBIND11 
 		void set_value_python(py::array_t<double, py::array::c_style>& arr) { /* {{{ */
+#ifdef HAVE_DEBUG
+            cout << "DoubleMatrix:: set value with array_t\n";
+#endif
 			py::buffer_info info = arr.request();
 			auto buf = arr.mutable_unchecked();
 
@@ -260,6 +266,9 @@ class DoubleMatrix{
 		} /* }}} */
 #ifdef HAVE_PYBIND11
 		py::array_t<double> get_value_python() const{ /* {{{ */
+#ifdef HAVE_DEBUG
+            cout << "DoulbeMatrix: get value with python\n";
+#endif
 			size_t M = (size_t)this->nrow;
 			size_t N = (size_t)this->ncol;
 
@@ -320,7 +329,7 @@ class DoubleMatrix{
 				throw runtime_error("Given col is out of range.");
 			}
 			double* result = new double[this->nrow];
-			for (int i=0; i<this->nrow; ++i){
+			for (int i=0; i<this->nrow; i++){
 				result[i] = this->value[i][col];
 			}
 			return result;	
@@ -331,8 +340,8 @@ class DoubleMatrix{
 			if (col > this->ncol || col < 0){
 				throw runtime_error("Given col is out of range.");
 			}
-			vector<double> result(this->nrow);
-            for (int i=0; i<this->nrow; ++i){
+			vector<double> result(this->nrow, 0.0);
+            for (int i=0; i<this->nrow; i++){
 				result[i] = this->value[i][col];
 			}
 			return result;	
