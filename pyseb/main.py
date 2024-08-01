@@ -14,6 +14,8 @@ def prepare_semic_day(nx=12744, amp=3.34, alb_smax=0.859, alb_smin=0.4753, albi=
     semic.verbose = 0
     semic.alb_scheme = 3
 
+    # This values are initial condition for calculating SEMIC.
+    # Especially, "albedo" (alb) value is required for 'ISBA' albedo scheme.
     semic.alb = 0.8*ONES[:]
     semic.alb_snow = 0.8*ONES[:]
     semic.tsurf = 260.*ONES[:]
