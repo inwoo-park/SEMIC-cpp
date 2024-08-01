@@ -153,7 +153,7 @@ class SemicResult{ /* {{{ */
     public:
         vector<string> output_request;
         vector<string> output_list = {"smb", "smb_snow","smb_ice",
-				"tsurf","melt","alb","hsnow","hice"};
+				"tsurf","melt","alb","hsnow","hice","evap","subl"};
         DoubleMatrix *smb;
         DoubleMatrix *smb_ice;
         DoubleMatrix *smb_snow;
@@ -164,7 +164,7 @@ class SemicResult{ /* {{{ */
         DoubleMatrix *hice;
 
         DoubleMatrix *subl;
-        DoubleMatrix *evpl;
+        DoubleMatrix *evap;
         DoubleMatrix *tsurf;
 
         SemicResult(){ /* {{{ */
@@ -182,7 +182,7 @@ class SemicResult{ /* {{{ */
             this->hice  = new DoubleMatrix();
 
             this->subl = new DoubleMatrix();
-            this->evpl = new DoubleMatrix();
+            this->evap = new DoubleMatrix();
 
             /* Initialize output requests */
             this->output_request.push_back("smb");
@@ -213,7 +213,7 @@ class SemicResult{ /* {{{ */
             this->hice    = new DoubleMatrix(nrow, ncol);
 
             this->subl = new DoubleMatrix(nrow, ncol);
-            this->evpl = new DoubleMatrix(nrow, ncol);
+            this->evap = new DoubleMatrix(nrow, ncol);
         } /* }}} */
 
         ~SemicResult(){ /* {{{ */
@@ -245,10 +245,10 @@ class SemicResult{ /* {{{ */
             delete this->hice;
 
 #ifdef HAVE_DEBUG
-			cout << "Destroy memory: subl and evpl\n";
+			cout << "Destroy memory: subl and evap\n";
 #endif
             delete this->subl;
-            delete this->evpl;
+            delete this->evap;
         } /* }}} */
 
         void free_memory(){
@@ -259,34 +259,37 @@ class SemicResult{ /* {{{ */
 #ifdef HAVE_DEBUG
 			   cout << "Destroy memory: smb_ice\n";
 #endif
-				 delete this->smb_ice;
+            delete this->smb_ice;
 #ifdef HAVE_DEBUG
 			   cout << "Destroy memory: smb_snow\n";
 #endif
-				 delete this->smb_snow;
+            delete this->smb_snow;
 
 #ifdef HAVE_DEBUG
 			   cout << "Destroy memory: alb\n";
 #endif
-				 delete this->alb;
+            delete this->alb;
 
-				 delete this->alb_snow;
+            delete this->alb_snow;
 
 #ifdef HAVE_DEBUG
 			   cout << "Destroy memory: smb_melt\n";
 #endif
-				 delete this->melt;
-				 delete this->tsurf;
-		  }
+            delete this->melt;
+            delete this->tsurf;
 
-		   /* search if specific string in string array */
-		   bool iscontain(vector<string> list, string value){
-				return find(list.begin(), list.end(), value) != list.end();
-			}
+            delete this->subl;
+            delete this->evap;
+		    }
 
-			bool ContainOutput(string value){
-				return find(this->output_list.begin(), this->output_list.end(), value) != output_list.end();
-			}
+        /* search if specific string in string array */
+        bool iscontain(vector<string> list, string value){
+            return find(list.begin(), list.end(), value) != list.end();
+        }
+
+        bool ContainOutput(string value){
+            return find(this->output_list.begin(), this->output_list.end(), value) != output_list.end();
+        }
 }; /* }}} */
 
 #endif

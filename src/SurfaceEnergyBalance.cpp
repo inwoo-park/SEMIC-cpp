@@ -826,6 +826,13 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
         this->Result->tsurf->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "hsnow"))
         this->Result->hsnow->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "hice"))
+        this->Result->hice->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "subl"))
+        this->Result->subl->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "evap"))
+        this->Result->evap->set_dimension(nx,ntime);
+
 	 /* }}} */
 
 	 /* sub time stepping */
@@ -901,6 +908,12 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
                         this->Result->alb->value[i][j]   = this->alb[i];
                     if (this->Result->iscontain(this->output_request, "hsnow"))
                         this->Result->hsnow->value[i][j]   = this->hsnow[i];
+                    if (this->Result->iscontain(this->output_request, "hice"))
+                        this->Result->hice->value[i][j]   = this->hice[i];
+                    if (this->Result->iscontain(this->output_request, "subl"))
+                        this->Result->subl->value[i][j]   = this->subl[i];
+                    if (this->Result->iscontain(this->output_request, "evap"))
+                        this->Result->evap->value[i][j]   = this->evap[i];
                 }
             }
         }

@@ -72,8 +72,8 @@ class DoubleMatrix{
 				throw std::runtime_error("Number of dimensions must be two");
 			}
 			if ((this->nrow == 0) && (this->ncol == 0)){
-				this->nrow = info.shape[0];
-				this->ncol = info.shape[1];
+				this->nrow = (int)info.shape[0];
+				this->ncol = (int)info.shape[1];
 				this->AllocateMemory(this->nrow, this->ncol);
 			}
 
@@ -231,8 +231,8 @@ class DoubleMatrix{
 				throw std::runtime_error("Number of dimensions must be two");
 			}
 			if ((this->nrow == 0) && (this->ncol == 0)){
-				this->nrow = info.shape[0];
-				this->ncol = info.shape[1];
+				this->nrow = (int)info.shape[0];
+				this->ncol = (int)info.shape[1];
 				this->AllocateMemory(this->nrow, this->ncol);
 			}
 

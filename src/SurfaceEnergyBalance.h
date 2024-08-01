@@ -62,7 +62,6 @@ class SEMIC{ /* {{{ */
 		DoubleVector qmr;    /* heat flux melting/refreezing */
 		DoubleVector qmr_res;  /* Residual heat flux from melting/refreezing (at end of time step) [W m-2]*/
 		
-		DoubleVector amp;    /* Temperature Amplitude [unit: K] */
 		DoubleVector sf;     /* snowfall [w.e. m s-1] */
 		DoubleVector rf;     /* rainfall [w.e. m s-1] */
 		DoubleVector sp;     /* Surface pressure [Pa] */
@@ -75,8 +74,8 @@ class SEMIC{ /* {{{ */
 
 		/* auxilary variables */
 		DoubleVector lwup; /* upward longwave radiation [W m-2] */
-		DoubleVector subl;
-		DoubleVector evap;
+		DoubleVector subl; /* sublimation [m s-1] */
+		DoubleVector evap; /* evaporation [m s-1] */
 
 		int num_threads; /* set number of cpus for openmp*/
 
