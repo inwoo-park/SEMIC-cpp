@@ -2,9 +2,9 @@
 import pyseb
 import numpy as np
 
-def test_SemicResult():
+def test_SemicResult(): # {{{
     nx = 10
-    ntime = 365
+    ntime = 20
     result = pyseb.SemicResult()
 
     output_request = result.output_request
@@ -12,7 +12,11 @@ def test_SemicResult():
 
     print(f"output list = {output_list}")
 
+    result.evap.get_value()
+    result.subl.get_value()
+
     print("Done!")
+    # }}}
 
 if __name__ == '__main__':
     test_SemicResult()

@@ -71,6 +71,8 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("alb_snow", &SemicResult::alb_snow)
         .def_readwrite("hsnow", &SemicResult::hsnow)
         .def_readwrite("hice", &SemicResult::hice)
+        .def_readwrite("subl", &SemicResult::subl)
+        .def_readwrite("evap", &SemicResult::evap)
         .def_readwrite("output_request", &SemicResult::output_request)
         .def_readwrite("output_list", &SemicResult::output_list)
 		  .def("free_memory", &SemicResult::free_memory)

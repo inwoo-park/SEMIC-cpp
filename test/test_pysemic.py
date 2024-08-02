@@ -178,6 +178,22 @@ def test_openmp(): # {{{
     # }}}
 
 @profile
+def test_memory_location():# {{{
+    nx = int(1e+6)
+    s1 = pyseb.SEMIC()
+    s2 = pyseb.SEMIC()
+
+    s1.Initialize(nx)
+    s2.Initialize(nx)
+
+    print(hex(id(s1)))
+    print(hex(id(s2)))
+
+    del s1
+    del s2
+    # }}}
+
+@profile
 def test_SemicForcings(): #{{{
     '''test SemicForcings class.
     '''
@@ -186,7 +202,7 @@ def test_SemicForcings(): #{{{
     #a = 100*np.ones((nx, ntime),dtype=float)
     a = np.random.random((nx, ntime))
 
-    if 0: # this process cannot clear the memory
+    if 1: # this process cannot clear the memory
         forcings = pyseb.SemicForcings(nx, ntime)
         forcings.t2m.set_value(1.0)
         forcings.sf.set_value(2.0)
@@ -195,7 +211,7 @@ def test_SemicForcings(): #{{{
         forcings.t2m.set_value(a)
         forcings.wind.set_value(a)
 
-        tmp = forcings.wind.get_value_python()
+        tmp = forcings.wind.get_value()
         del tmp
         del forcings
 
@@ -215,11 +231,11 @@ def test_SemicForcings(): #{{{
     print(forcings.t2m.nrow, forcings.t2m.ncol)
 
     t2m = forcings.t2m.get_value()
+    sf  = forcings.sf.get_value()
     rf  = forcings.rf.get_value()
     assert(np.all(a == t2m))
     del a
-    del t2m
-    del rf
+    del t2m, rf, sf
     del forcings
 
     if 0:
@@ -295,7 +311,7 @@ def test_DoubleMatrix(): # {{{
     b = 10*np.ones((nrow, ncol))
     a = pyseb.DoubleMatrix(nrow, ncol)
     a.set_value(b)
-    tmp = a.get_value_python()
+    tmp = a.get_value()
 
     del tmp
     del a
@@ -304,7 +320,7 @@ def test_DoubleMatrix(): # {{{
     # step2
     b = 10*np.ones((nrow, ncol))
     a = pyseb.DoubleMatrix(b)
-    tmp = a.get_value_python()
+    tmp = a.get_value()
 
     del tmp
     del a
@@ -313,14 +329,14 @@ def test_DoubleMatrix(): # {{{
     # step3
     a = pyseb.DoubleMatrix(nrow, ncol)
     a.set_value(1.0)
-    tmp = a.get_value_python()
+    tmp = a.get_value()
     del tmp
     del a
 
     # step4
     b = 10*np.ones((nrow, ncol),dtype=float)
     a = pyseb.DoubleMatrix(b)
-    tmp = a.get_value_python()
+    tmp = a.get_value()
     del tmp
     del a
     del b
@@ -520,7 +536,7 @@ def test_semic_openmp_ERA5(): # {{{
     del force
     # }}}
 
-# @profile
+@profile
 @pytest.mark.skip(reason='Skip testing output_request')
 def test_OutputRequest(): # {{{
     import tqdm
@@ -534,8 +550,8 @@ def test_OutputRequest(): # {{{
 
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
-    nx   = 1 # only 100 nodes are required
-    ntime=10
+    #nx   = 1 # only 100 nodes are required
+    #ntime=10
 
     print(f'   shape of t2m = ({nx}, {ntime})')
 
@@ -553,9 +569,9 @@ def test_OutputRequest(): # {{{
     rhoa = pyseb.utils.AirDensityFromSpecificHumidity(force['sp'].T[:nx,:], force['t2m'].T[:nx,:], qq)
         
     print(f'   Set SemicForcings')
-    f = pyseb.SemicForcings()
-    f.nx = nx
-    f.ntime = ntime
+    f = pyseb.SemicForcings(nx, ntime)
+    #f.nx = nx
+    #f.ntime = ntime
     f.sf.set_value(sf)
     f.rf.set_value(rf)
     f.sp.set_value(sp)
@@ -573,7 +589,7 @@ def test_OutputRequest(): # {{{
     semic = InitializeSEMIC(nx)
     semic.num_threads = 4
     semic.SetOpenmpThreads()
-    semic.verbose = True
+    semic.verbose = False
 
     # show default request output
     print(f'Request output = {semic.output_request}')
@@ -610,7 +626,7 @@ def test_OutputRequest(): # {{{
     del f
     del force
     del semic
-    del smb, melt
+    del smb, melt, tsurf
     # }}}
 
 if __name__ == '__main__':
@@ -621,6 +637,7 @@ if __name__ == '__main__':
     # test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
+    test_memory_location()
 
     if 0:
         proc = psutil.Process(os.getpid())
@@ -662,7 +679,7 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    if 1:
+    if 0:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_OutputRequest()
