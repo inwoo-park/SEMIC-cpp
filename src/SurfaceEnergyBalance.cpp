@@ -822,6 +822,8 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
 #endif
         this->Result->alb->set_dimension(nx,ntime);
     }
+    if (this->Result->iscontain(this->output_request, "alb_snow"))
+        this->Result->alb_snow->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "tsurf"))
         this->Result->tsurf->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "hsnow"))
@@ -906,6 +908,8 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
                         this->Result->tsurf->value[i][j] = this->tsurf[i];
                     if (this->Result->iscontain(this->output_request, "alb"))
                         this->Result->alb->value[i][j]   = this->alb[i];
+                    if (this->Result->iscontain(this->output_request, "alb_snow"))
+                        this->Result->alb_snow->value[i][j]   = this->alb_snow[i];
                     if (this->Result->iscontain(this->output_request, "hsnow"))
                         this->Result->hsnow->value[i][j]   = this->hsnow[i];
                     if (this->Result->iscontain(this->output_request, "hice"))
