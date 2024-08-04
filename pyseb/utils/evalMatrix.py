@@ -72,8 +72,8 @@ def nRMSE(Xobs, Ymod, ismethod='std', omitnan:bool=True): # {{{
     else:
         raise Exception('ERROR: Given method(=%s) is not available. Use "std","quantile", and "minmax" are available.')
 
-    if Xstd < 0.000001:
-        raise Exception('ERROR: Xstd encounters the zero value.')
+    #if Xstd < 0.000001:
+    #    raise Exception('ERROR: Xstd encounters the zero value.')
 
     return np.sqrt(np.mean((Xobs-Ymod)**2))/Xstd
     # }}}
