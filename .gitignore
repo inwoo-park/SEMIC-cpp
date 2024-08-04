@@ -1,9 +1,11 @@
 # ---> Data, User defined
 install
 test/data/
+test/temp
 *.json
 *.outlog
 .nfs*
+*.nc
 *.errlog
 
 # ---> VSCODE special.
