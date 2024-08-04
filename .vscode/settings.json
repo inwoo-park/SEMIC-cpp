@@ -6,5 +6,10 @@
 	},
 	"cmake.buildDirectory": "${workspaceFolder}/build",
 	"cmake.installPrefix": "${workspaceFolder}/install",
-	"cmake.sourceDirectory": "${workspaceFolder}"
+	"cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.configureSettings":{
+        "USE_DEBUG":"OFF",
+        "use_pybind11":"ON",
+        "USE_OPENMP":"ON"
+    }
 }
