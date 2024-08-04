@@ -707,7 +707,24 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		double f_alb;
 		double albi=this->Param->albi;
 		double albl=this->Param->albl;
-		f_alb = 1 - exp(-this->hsnow[i]/(this->Param->hcrit + EPSILON));
+
+		/* Calculate */
+		if (this->Param->alb_scheme_sum)
+			f_alb = 1 - exp(-this->hsnow[i]/(this->Param->hcrit + EPSILON));
+		else if (this->Param->alb_scheme_sum){
+			/* Eq. (11) in Napoly et al. (2020)
+			
+			Napoly, A., Boone, A., & Welfringer, T. (2020). ISBA-MEB (SURFEX v8.1): Model snow evaluation for local-scale forest sites. Geoscientific Model Development, 13(12), 6523–6545. https://doi.org/10.5194/gmd-13-6523-2020
+			*/
+			f_alb = 1 - this->hsnow[i]/(this->Param->hcrit + EPSILON);
+			/* preventing negative value! */
+			f_alb = max(0.0, min(1.0, f_alb)); /* 0<= f_alb <= 1 */
+		}
+		else{
+			cerr << "ERROR: Given Param->alb_scheme_sum (=" << this->Param->alb_scheme_sum << ") value is not available\n";
+		}
+
+		/* Now, calcaulate snow albedo*/
 		if (this->alb_scheme == 0){
 			this->alb_snow[i] = this->Param->alb_smax;
 		}

@@ -19,6 +19,7 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def_readwrite("albl",&SemicParameters::albl)
 	  .def_readwrite("alb_smax",&SemicParameters::alb_smax)
 	  .def_readwrite("alb_smin",&SemicParameters::alb_smin)
+	  .def_readwrite("alb_scheme_sum", &SemicParameters::alb_scheme_sum)
 	  .def_readwrite("hcrit",&SemicParameters::hcrit)
 	  .def_readwrite("rcrit",&SemicParameters::rcrit)
 	  .def_readwrite("amp",&SemicParameters::amp)

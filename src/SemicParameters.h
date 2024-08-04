@@ -21,6 +21,7 @@ class SemicParameters{ /* {{{ */
 		double albl; /* Background albedo (bare land) [no unit] */
 		double alb_smax; /* Maximum snow albedo (fresh snow) [no unit] */
 		double alb_smin; /* Minimum snow albedo (fresh snow) [no unit] */
+		int alb_scheme_sum; /* Albedo scheme in integrating albedo */
 		
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
@@ -47,6 +48,7 @@ class SemicParameters{ /* {{{ */
 
         SemicParameters(){
             this->amp = DoubleVector(0, 0.0);
+			this->alb_scheme_sum = 0;
         }
         ~SemicParameters(){
             this->amp.clear();
