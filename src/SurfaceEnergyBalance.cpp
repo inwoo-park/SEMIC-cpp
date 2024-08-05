@@ -9,7 +9,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
-   this->Result = new SemicResult();
+    this->Result = new SemicResult();
 
 	this->verbose = true;
 
@@ -710,14 +710,14 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		if (i==0 && this->verbose)
 			cout << "   step12: update snow albedo\n";
 		
-		double f_alb;
+		double f_alb=0.0;
 		double albi=this->Param->albi;
 		double albl=this->Param->albl;
 
 		/* Calculate */
-		if (this->Param->alb_scheme_sum)
+		if (this->Param->alb_scheme_sum == 0)
 			f_alb = 1 - exp(-this->hsnow[i]/(this->Param->hcrit + EPSILON));
-		else if (this->Param->alb_scheme_sum){
+		else if (this->Param->alb_scheme_sum == 1){
 			/* Eq. (11) in Napoly et al. (2020)
 			
 			Napoly, A., Boone, A., & Welfringer, T. (2020). ISBA-MEB (SURFEX v8.1): Model snow evaluation for local-scale forest sites. Geoscientific Model Development, 13(12), 6523–6545. https://doi.org/10.5194/gmd-13-6523-2020
