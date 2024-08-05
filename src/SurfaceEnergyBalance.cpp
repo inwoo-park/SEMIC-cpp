@@ -85,6 +85,12 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 	this->Param->albi = 0.07;
 	this->Param->albl = 0.15;
 
+    /* use default albedo integration with Oerlemans et al. (1998) method
+
+    * Oerlemans, J., & Knap, W. H. (1998). A 1 year record of global radiation and albedo in the ablation zone of Morteratschgletscher, Switzerland. Journal of Glaciology, 44(147), 231–238. https://doi.org/10.3189/S0022143000002574
+    */
+    this->Param->alb_scheme_sum = 0;
+
 	/* for slater's albedo scheme 
 	Use tmin with -10 C noted in Slater's 1998 paper.
 	*/
