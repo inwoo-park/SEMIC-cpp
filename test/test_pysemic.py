@@ -637,7 +637,7 @@ if __name__ == '__main__':
     # test_LongwaveRadiation()
     # test_RunSemic()
     # test_tqdm()
-    test_memory_location()
+    # test_memory_location()
 
     if 0:
         proc = psutil.Process(os.getpid())
@@ -669,7 +669,7 @@ if __name__ == '__main__':
         print('Memory usage')
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
-    if 0:
+    if 1:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_semic_openmp_ERA5()
