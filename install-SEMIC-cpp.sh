@@ -1,5 +1,12 @@
 #!/bin/bash
 
+CC=gcc
+CXX=g++
+if [ $(hostname) == 'simba20' ] || [ $(hostname) == 'simba00' ]; then
+	CC=icc
+	CXX=icpc
+fi
+
 # get current director
 cwd=$(pwd)
 
@@ -9,7 +16,9 @@ fi
 cd build && cmake ../ \
 	--fresh \
 	-L -DCMAKE_INSTALL_PREFIX=${cwd}/install -DUSE_OPENMP=ON \
-	-DUSE_DEBUG=OFF
+	-DUSE_DEBUG=OFF \
+	-DCMAKE_C_COMPILER=${CC} \
+	-DCMAKE_CXX_COMPILER=${CXX} \
 make && make install
 cd ../
 
