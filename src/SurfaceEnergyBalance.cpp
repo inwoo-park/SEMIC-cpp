@@ -473,11 +473,14 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	fill(this->lwup.begin(), this->lwup.end(), 0.0);
 	
-	#pragma omp parallel private(i) shared(nx, qsb) /* Initialize Openmp Parallel*/
+	int thread_id = 0;
+	
+	#pragma omp parallel private(i, thread_id) shared(nx, qsb) /* Initialize Openmp Parallel*/
 	{
+	 thread_id = omp_get_thread_num();
 
-	#pragma omp master
-	if (this->verbose)
+	//#pragma omp master
+	if (this->verbose & thread_id == 0)
 		cout << "   step1: Calculate the sensible heat flux\n";
 	
 	#pragma omp for //schedule(dynamic)
@@ -486,8 +489,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i], this->shf[i]);
 	}
 
-	#pragma omp master
-	if (this->verbose)
+	//#pragma omp master
+	if (this->verbose && thread_id == 0)
 		cout << "   step2: Calculate the latent heat flux\n";
 
 	#pragma omp for //schedule(dynamic)	
@@ -497,8 +500,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->subl[i] = this->subl[i]/RHOW;
 	}
 	
-	#pragma omp master
-	if (this->verbose)
+	//#pragma omp master
+	if (this->verbose && thread_id == 0)
 		cout << "   step3: Surface physics: long-wave radiation\n";
 	
 	#pragma omp for //schedule(dynamic)
@@ -506,8 +509,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 		this->LongwaveRadiationUp(this->tsurf[i], this->lwup[i]);
 	
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
-	#pragma omp master
-	if (this->verbose)
+	//#pragma omp master
+	if (this->verbose & thread_id == 0)
 		cout << "   step4: calculate surface energy balance\n";
 
 	#pragma omp for //schedule(dynamic)
@@ -516,8 +519,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	}
 
 	/* 5. Update surface temperature acoording to surface energy balancec */
-	#pragma omp master
-	if (this->verbose)
+	//#pragma omp master
+	if (this->verbose & thread_id == 9)
 		cout << "   step5: update surface temperature\n";
 
 	#pragma omp for //schedule(dynamic)
@@ -534,8 +537,10 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	/* 6. Update 2-m air temperature over ice sheet */
 	#pragma omp master
+	{
 	if (this->verbose)
 		cout << "   step6: update 2-air temperature\n";
+	}
 
 	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
@@ -574,14 +579,17 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	assert(this->smb_snow.size() == nx);
 	assert(this->smb_ice.size() == nx);
 
+	int thread_id = 0;
+
 	if (this->verbose) cout << "   RunMassBalance\n";
 
     /* start omp parallel*/
-	#pragma omp parallel private(i, f_rz) shared(nx, snow_to_ice_input, qmelt, qcold, above, below, refrozen_rain, refrozen_snow)
+	#pragma omp parallel private(i, f_rz, thread_id) shared(nx, snow_to_ice_input, qmelt, qcold, above, below, refrozen_rain, refrozen_snow)
 	{
+	 thread_id = omp_get_thread_num(); /* get master thread */
 
-    #pragma omp master
-    if (this->verbose){
+    //#pragma omp master
+    if (thread_id == 0 & this->verbose){
         /* Check variable */
         cout << "RHOW = " << RHOW << endl;
         cout << "CLM  = " << CLM << endl;
