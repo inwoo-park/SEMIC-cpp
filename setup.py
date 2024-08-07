@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import pybind11
 import sys
+import sysconfig # check default compiler for python.
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 from setuptools import setup, find_packages, Extension
 from distutils.sysconfig import get_config_vars
@@ -17,12 +18,29 @@ __version__ = '0.2'
 copt = {'linux':[]}
 lopt = {'linux':[]}
 
+# Check python's default compiler set.
+def CheckCompiler(): # {{{
+    compiler = sysconfig.get_config_var('CC').split(' ')[0]
+    if compiler ==  'icc':
+        return 'intel'
+    elif compiler == 'gcc':
+        return 'gcc'
+    else:
+        raise Exception(f"ERROR: Given compiler ({compiler}) is not supported.")
+    # }}}
+
+compiler = CheckCompiler()
+
 # OpenMP flags depending on the compiler
-extra_compile_args = ['-std=c++11']
+extra_compile_args = []
+#extra_compile_args = ['-std=c++11']
 if sys.platform == "win32":
     extra_compile_args += ['/openmp']
 else:
-    extra_compile_args += ['-fopenmp']
+    if compiler == 'gcc':
+        extra_compile_args += ['-fopenmp']
+    elif compiler == 'intel':
+        extra_compile_args += ['-qopenmp'] #,'-xHost','-O2']
 
 class get_pybind_include(object):
     """Helper class to determine the pybind11 include path
@@ -64,7 +82,7 @@ setup(
         setup_requires=['pybind11'],
         install_requires=[
             'pybind11',
-            'numpy',
+            'numpy<2',
             'matplotlib',
             'tqdm',
             'xarray',
