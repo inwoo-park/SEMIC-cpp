@@ -417,7 +417,7 @@ def test_semic_openmp_ERA5(): # {{{
 
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
-    nx = 10000 # only 100 nodes are required
+    #nx = 10000 # only 100 nodes are required
 
     print(f'   shape of t2m = ({nx}, {ntime})')
 
@@ -455,7 +455,7 @@ def test_semic_openmp_ERA5(): # {{{
     # Initialize num threads depending on system.
     if hostname in ['simba00','simba20']:
         #NUM_THREADS = [1, 4, 8, 16, 24]
-        NUM_THREADS = [1, 2, 4]
+        NUM_THREADS = [1, 2, 4, 8, 16]
     else:
         NUM_THREADS = [1, 2, 4, 8]
     
@@ -509,7 +509,7 @@ def test_semic_openmp_ERA5(): # {{{
         print(f'   Run energy balance!')
         # 5-times loop
         tstart = datetime.datetime.now()
-        semic.RunEnergyAndMassBalance(f, 2)
+        semic.RunEnergyAndMassBalance(f, 4)
         elp_time = datetime.datetime.now()-tstart
         print(f'Elapsed time = {elp_time}')
 
@@ -517,7 +517,10 @@ def test_semic_openmp_ERA5(): # {{{
                         'time':elp_time}
         
         # Okay, check difference between threads
-        smb.append(semic.Result.smb.get_value())
+        tmp = semic.Result.smb.get_value()
+        smb.append(tmp)
+
+        del semic
 
     # Check final value!
     print(smb[0][0,0], smb[1][0,0])
@@ -530,7 +533,6 @@ def test_semic_openmp_ERA5(): # {{{
     ax.legend()
     plt.show()
 
-    del semic
     del f
     del smb
     del force
