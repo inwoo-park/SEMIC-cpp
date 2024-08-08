@@ -29,14 +29,13 @@ def CheckCompiler(): # {{{
         raise Exception(f"ERROR: Given compiler ({compiler}) is not supported.")
     # }}}
 
-compiler = CheckCompiler()
-
 # OpenMP flags depending on the compiler
 extra_compile_args = []
 #extra_compile_args = ['-std=c++11']
 if sys.platform == "win32":
     extra_compile_args += ['/openmp']
 else:
+    compiler = CheckCompiler()
     if compiler == 'gcc':
         extra_compile_args += ['-fopenmp']
     elif compiler == 'intel':

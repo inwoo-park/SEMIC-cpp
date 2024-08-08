@@ -480,7 +480,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	 thread_id = omp_get_thread_num();
 
 	//#pragma omp master
-	if (this->verbose & thread_id == 0)
+	if ((this->verbose) & (thread_id == 0))
 		cout << "   step1: Calculate the sensible heat flux\n";
 	
 	#pragma omp for //schedule(dynamic)
@@ -510,7 +510,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	
 	/* 4. Calculate surface energy balance of incoming and outgoing surface fluxes (W m-2) */
 	//#pragma omp master
-	if (this->verbose & thread_id == 0)
+	if ((this->verbose) & (thread_id == 0))
 		cout << "   step4: calculate surface energy balance\n";
 
 	#pragma omp for //schedule(dynamic)
@@ -520,7 +520,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	/* 5. Update surface temperature acoording to surface energy balancec */
 	//#pragma omp master
-	if (this->verbose & thread_id == 9)
+	if ((this->verbose) & (thread_id == 9))
 		cout << "   step5: update surface temperature\n";
 
 	#pragma omp for //schedule(dynamic)
@@ -589,7 +589,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	 thread_id = omp_get_thread_num(); /* get master thread */
 
     //#pragma omp master
-    if (thread_id == 0 & this->verbose){
+    if ((thread_id == 0) & (this->verbose)){
         /* Check variable */
         cout << "RHOW = " << RHOW << endl;
         cout << "CLM  = " << CLM << endl;
