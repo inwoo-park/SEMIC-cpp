@@ -21,7 +21,7 @@ class SemicParameters{ /* {{{ */
 		double albl; /* Background albedo (bare land) [no unit] */
 		double alb_smax; /* Maximum snow albedo (fresh snow) [no unit] */
 		double alb_smin; /* Minimum snow albedo (fresh snow) [no unit] */
-		int alb_scheme_sum; /* Albedo scheme in integrating albedo */
+		int alb_scheme_sum; /* Albedo scheme in integrating albedo. 0: use default setting, 1: use integration from ISBA-MEB */
 		
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
