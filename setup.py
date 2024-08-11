@@ -78,7 +78,7 @@ setup(
         cmdclass={'build_ext':build_ext},
         zip_safe=False,
         python_requires='>=3.9',
-        setup_requires=['pybind11'],
+        #setup_requires=['pybind11'],
         install_requires=[
             'pybind11',
             'numpy<2',
@@ -87,6 +87,7 @@ setup(
             'xarray',
             'netCDF4',
             'memory-profiler', # for checking memory leakage.
+            'scipy','pytest',
         ],
         # which required directory?
         packages=find_packages(include=['pyseb']),
