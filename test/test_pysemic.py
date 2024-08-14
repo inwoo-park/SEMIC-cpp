@@ -6,6 +6,8 @@ import pyseb
 import socket
 hostname = socket.gethostname().lower().replace('-','')
 
+isplot = 0
+
 # check memory usage
 from memory_profiler import profile
 import psutil
@@ -411,6 +413,8 @@ def test_semic_openmp_ERA5(): # {{{
     import scipy.io
     import datetime, pandas
 
+    global isplot
+
     # move to specific directory
     _dirname = os.path.dirname(__file__)
     os.chdir(_dirname)
@@ -418,6 +422,7 @@ def test_semic_openmp_ERA5(): # {{{
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
     #nx = 10000 # only 100 nodes are required
+    #nx = 100
 
     print(f'   shape of t2m = ({nx}, {ntime})')
 
@@ -526,12 +531,16 @@ def test_semic_openmp_ERA5(): # {{{
     print(smb[0][0,0], smb[1][0,0])
     #assert(smb[0][0,0] == smb[1][0,0])
 
-    import matplotlib.pyplot as plt
-    fig, ax = plt.subplots()
-    ax.plot(df1['num_thread'], df1['time'], label='C++-Python')
-    ax.plot(df2['num_thread'], df2['time'], label='C++only')
-    ax.legend()
-    plt.show()
+    if isplot:
+        import matplotlib.pyplot as plt
+        fig, ax = plt.subplots()
+        #ax.plot(df1['num_thread'], df1['time'], label='C++-Python')
+        ax.plot(df2['num_thread'], df2['time'], label='C++only')
+        ax.legend()
+        plt.show()
+
+    # Export runtime 
+    df2.to_csv('./test_semic_openmp_ERA5_runtime.csv')
 
     del f
     del smb
