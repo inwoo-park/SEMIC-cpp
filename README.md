@@ -13,7 +13,6 @@ Wrapping up SEMIC in C++.
 ## Install
 
 * To install the `pySEMIC.cpp` for running semic in cpp, use following command.
-
 * This work is only tested in `linux` machine, `not window` machine.
 
 ```bash
@@ -38,3 +37,22 @@ pip install -e .
 ```
 
 # Usage
+
+```python
+import pyseb
+
+% initialize variable
+nx = 100 # number of grid
+ntime = 365 # number of timestep in day
+
+semic = pyseb.SEMIC()
+semic.Initialize(nx)
+
+```
+
+
+# Check runtime with using OpenMP
+
+![sibma00_openmp_runtime](image/README/1723648168857.png)
+
+Figure. Runtime of SEMIC depending on number of threads using OpenMP. To operate testing runtime, SIMBA machine is used.
