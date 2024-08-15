@@ -12,6 +12,10 @@ isplot = 0
 from memory_profiler import profile
 import psutil
 
+# load src
+sys.path.insert(0, './src')
+from load_era5_forcing import load_era5_forcing
+
 def InitializeSEMIC(nx): # {{{
     # now calculate surface and enery balance
     print(f"   -- Load SEMIC module.")
@@ -547,6 +551,33 @@ def test_semic_openmp_ERA5(): # {{{
     del force
     # }}}
 
+def test_semic_split_project(): # {{{
+    '''
+    '''
+    nx = 100 # for testing
+    num_threads = 4
+    f = load_era5_forcing(nx=nx)
+    print(f'ntime = {f.ntime}')
+    print(f'nx    = {f.nx}')
+
+    semic = InitializeSEMIC(nx)
+    semic.num_threads = num_threads
+    semic.SetOpenmpThreads()
+
+    print('Run Semic First')
+    semic.RunEnergyAndMassBalance(f, 1)
+
+    print('ReRun Semic with another forcing length')
+    for ntime in [100, 200]:
+        print(f'   size of ntime = {ntime}')
+        f = load_era5_forcing(nx=nx, ntime=ntime)
+        semic.RunEnergyAndMassBalance(f, 1)
+
+        # check output size
+        tmp = semic.Result.smb.get_value()
+        print(f'   size of smb = {np.shape(tmp)}')
+    # }}}
+
 @profile
 @pytest.mark.skip(reason='Skip testing output_request')
 def test_OutputRequest(): # {{{
@@ -680,7 +711,7 @@ if __name__ == '__main__':
         print('Memory usage')
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
-    if 1:
+    if 0:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_semic_openmp_ERA5()
@@ -699,3 +730,5 @@ if __name__ == '__main__':
         print('Memory usage')
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
+
+    test_semic_split_project()
