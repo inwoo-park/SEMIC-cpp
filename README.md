@@ -50,9 +50,8 @@ semic.Initialize(nx)
 
 ```
 
-
 # Check runtime with using OpenMP
 
-![sibma00_openmp_runtime](image/README/1723648168857.png)
+![sibma00_openmp_runtime](image/README/sibma00_openmp_runtime.png)
 
 Figure. Runtime of SEMIC depending on number of threads using OpenMP. To operate testing runtime, SIMBA machine is used.
