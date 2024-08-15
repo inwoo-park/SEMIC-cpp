@@ -406,6 +406,7 @@ class DoubleMatrix{
 		//for (int i=0; i<this->nrow; i++){
 		//	this->value[i] = new double[this->ncol];
 		//}
+		value.clear();
 		value.resize(nrow, vector<double>(ncol,0.0));
 	} /* }}} */
 
