@@ -555,8 +555,9 @@ def test_semic_split_project(): # {{{
     '''
     '''
     nx = 100 # for testing
+    ntime = 50
     num_threads = 4
-    f = load_era5_forcing(nx=nx)
+    f = load_era5_forcing(nx=nx, ntime=ntime)
     print(f'ntime = {f.ntime}')
     print(f'nx    = {f.nx}')
 
@@ -568,7 +569,7 @@ def test_semic_split_project(): # {{{
     semic.RunEnergyAndMassBalance(f, 1)
 
     print('ReRun Semic with another forcing length')
-    for ntime in [100, 200]:
+    for ntime in [100, 200, 50]:
         print(f'   size of ntime = {ntime}')
         f = load_era5_forcing(nx=nx, ntime=ntime)
         semic.RunEnergyAndMassBalance(f, 1)
