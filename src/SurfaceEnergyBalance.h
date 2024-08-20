@@ -107,6 +107,7 @@ class SEMIC{ /* {{{ */
 		double Albedo_Slater(double tsurf, double tmin, double tmax, double alb_smax, double alb_smin);
 		double Albedo_Denby(double melt, double alb_smax, double alb_smin, double mcrit);
 		double Albedo_ISBA(double alb, double sf, double melt, double tstic, double tau, double tau_a, double tau_f, double w_crit, double mcrit, double alb_smin, double alb_smax);
+		double Albedo_Zeitz(double melt, double alb_smax, double alb_smin, double mcrit);
 
 		double 	ew_sat(double t);
 		double 	ei_sat(double t);

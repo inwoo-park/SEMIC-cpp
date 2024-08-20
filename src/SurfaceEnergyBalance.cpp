@@ -399,6 +399,20 @@ double SEMIC::Albedo_ISBA(double alb, double sf, double melt, double tstic, doub
 	alb = min(alb_smax, max(alb, alb_smin));
 	return alb;
 }/*}}}*/
+double SEMIC::Albedo_Zeitz(double melt, double alb_smax, double alb_smin, double mcrit) { /* {{{ */
+	/* Calculate snow albedo with Zeitz et al. (2021), Garbe et al. (2023)
+	 
+		References
+		* Zeitz, M., Reese, R., Beckmann, J., Krebs-Kanzow, U., and Winkelmann, R.: Impact of the melt–albedo feedback on the future evolution of the Greenland Ice Sheet with PISM-dEBM-simple, The Cryosphere, 15, 5739–5764, https://doi.org/10.5194/tc-15-5739-2021, 2021.
+		* Garbe, J., Zeitz, M., Krebs-Kanzow, U., and Winkelmann, R.: The evolution of future Antarctic surface melt using PISM-dEBM-simple, The Cryosphere, 17, 4571–4599, https://doi.org/10.5194/tc-17-4571-2023, 2023.
+	 */
+	
+	double alb;
+	alb = alb_smax - mcrit * melt;
+	alb = max(alb, alb_smin);
+
+	return alb;
+}/* }}} */
 
 double SEMIC::ew_sat(double t){/*{{{*/
 	/* Saturation water vapor prepssure over water
@@ -754,6 +768,10 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		else if (this->alb_scheme == 3){
 			/* ISBA albedo scheme */
 			this->alb_snow[i] = this->Albedo_ISBA(this->alb_snow[i], this->sf[i], this->melt[i], this->Param->tstic, this->Param->tstic, this->Param->tau_f, this->Param->tau_f, this->Param->w_crit, this->Param->mcrit, this->Param->alb_smax, this->Param->alb_smax);
+		}
+		else if (this->alb_scheme == 4){
+			/* Zetiz albedo scheme */
+			this->alb_snow[i] = this->Albedo_Zeitz(this->melt[i], this->Param->alb_smax, this->Param->alb_smin, this->Param->mcrit);
 		}
 		else{
 			cerr << "ERROR: Given alb_scheme is not available\n";
