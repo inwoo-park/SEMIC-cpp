@@ -2,10 +2,9 @@
 import numpy as np
 import os, sys, platform
 import xarray
-import pyseb
 
 __all__ = ['save_netcdf']
-def save_netcdf(semic:pyseb.SEMIC, fname:str, time:list): # {{{
+def save_netcdf(semic, fname:str, time:list): # {{{
     '''
     Explain
     -------
