@@ -27,7 +27,7 @@ def save_netcdf(semic, fname:str, time:list): # {{{
     time: list
         datetime array.
     '''
-    raise Exception('ERROR: This is under development.')
+    #raise Exception('ERROR: This is under development.')
 
     nx    = semic.nx # load number of grid.
     ntime = len(time) # time stamp for semic simulation.
