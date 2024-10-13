@@ -82,9 +82,11 @@ PYBIND11_MODULE(libpysemic, m){
 	 /* }}} */
 
 	py::class_<SEMIC>(m, "SEMIC") /* {{{ */
-	    .def_readwrite("Param",&SEMIC::Param)
+	   .def_readwrite("Param",&SEMIC::Param)
 		.def_readwrite("Const",&SEMIC::Const)
-        .def_readwrite("Result",&SEMIC::Result)
+      .def_readwrite("Result",&SEMIC::Result)
+		/* variables in SEMIC */
+		.def_readwrite("nx",&SEMIC::nx)
 		/* initialize forcing variables */
 		.def_readwrite("sf",&SEMIC::sf)
 		.def_readwrite("rf",&SEMIC::rf)
@@ -114,7 +116,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("qmr",&SEMIC::qmr)
 		.def_readwrite("qmr_res",&SEMIC::qmr_res)
 		.def_readwrite("verbose",&SEMIC::verbose)
-        .def_readwrite("n_ksub",&SEMIC::n_ksub)
+      .def_readwrite("n_ksub",&SEMIC::n_ksub)
 		.def_readwrite("num_threads",&SEMIC::num_threads)
 		.def_readwrite("output_request", &SEMIC::output_request)
 		.def("Initialize",&SEMIC::Initialize)
@@ -127,15 +129,15 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
 		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(void))&SEMIC::RunEnergyAndMassBalance)
-        .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*, int))(&SEMIC::RunEnergyAndMassBalance))
-        .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*))(&SEMIC::RunEnergyAndMassBalance))
-        .def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
-        .def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
-        // .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
-        .def("GetOpenmpVersion", (int (SEMIC::*)(void)) &SEMIC::GetOpenmpVersion)
+      .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*, int))(&SEMIC::RunEnergyAndMassBalance))
+      .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*))(&SEMIC::RunEnergyAndMassBalance))
+      .def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
+      .def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
+      // .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
+      .def("GetOpenmpVersion", (int (SEMIC::*)(void)) &SEMIC::GetOpenmpVersion)
 		.def("GetOpenmpThreads", &SEMIC::GetOpenmpThreads)
-        // .def(py::init<int, int>());
-        .def(py::init<>());
+      // .def(py::init<int, int>());
+      .def(py::init<>());
 		/* }}} */
 
 	py::class_<DoubleMatrix>(m, "DoubleMatrix") /* {{{ */

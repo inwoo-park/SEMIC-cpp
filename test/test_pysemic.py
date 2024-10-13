@@ -580,7 +580,7 @@ def test_semic_split_project(): # {{{
     # }}}
 
 @profile
-@pytest.mark.skip(reason='Skip testing output_request')
+#@pytest.mark.skip(reason='Skip testing output_request')
 def test_OutputRequest(): # {{{
     import tqdm
     import xarray, netCDF4
@@ -644,6 +644,10 @@ def test_OutputRequest(): # {{{
     # nloop = 2
     print('Run semic!')
     semic.RunEnergyAndMassBalance(f, 1)
+
+    print('Save temporal file')
+    time_dummy = np.arange(ntime)
+    pyseb.io.save_netcdf(semic, './temp.nc', time_dummy)
 
     smb = semic.Result.smb.get_value()
     melt = semic.Result.melt.get_value()
@@ -722,7 +726,7 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    if 0:
+    if 1:
         proc = psutil.Process(os.getpid())
         mem_before = proc.memory_info().rss / 1024**2
         test_OutputRequest()
@@ -732,4 +736,4 @@ if __name__ == '__main__':
         print(f'   before = {mem_before}')
         print(f'   after  = {mem_after}')
 
-    test_semic_split_project()
+    #test_semic_split_project()
