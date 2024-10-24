@@ -5,7 +5,7 @@ import xarray
 import warnings
 
 __all__ = ['save_netcdf']
-def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32): # {{{
+def save_netcdf(elements, x, y, semic, time:list, fname:str=None, data_type:type=np.float32): # {{{
     '''
     Explain
     -------
@@ -40,9 +40,15 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32): # 
 
     nx    = semic.nx # load number of grid.
     ntime = len(time) # time stamp for semic simulation.
+    if ntime == 1:
+        raise Exception('ERROR!')
 
     # Initialize Dataset array.
-    nc = xarray.Dataset(coords={'time':time,'ncells':np.arange(nx)})
+    nc = xarray.Dataset(coords={'time':time,'ncells':np.arange(nx),
+                                'elements':(('nelem','ntri'),elements),
+                                'x':('ncells',x),
+                                'y':('ncells',y),
+                                })
 
     # Check given data type
     if not data_type in (np.float32, np.float64, float):
