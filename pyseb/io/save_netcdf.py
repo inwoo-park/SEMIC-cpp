@@ -8,7 +8,7 @@ __all__ = ['save_netcdf']
 def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
                 elements=None, x=None, y=None,
                 # output results
-                smb=None, melt=None, tsurf=None, alb=None, alb_snow=None, subl=None, evap=None, hsnow=None, swsn=None): # {{{
+                smb=[], melt=[], tsurf=[], alb=[], alb_snow=[], subl=[], evap=[], hsnow=[], swsn=[]): # {{{
     '''
     Explain
     -------
@@ -69,8 +69,9 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
     # check requested output
     output_request = semic.output_request
     for varname in ['smb','melt','tsurf','alb','alb_snow','subl','evap','swsn']:
-        print(f'   load result: {varname}')
+        isfind = 0
         if (varname == 'smb') & ((varname in output_request) | np.any(smb)):
+            isfind = 1
             if ~np.any(smb):
                 value = semic.Result.smb.get_value()
             else:
@@ -78,6 +79,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'m w.e. s-1',
                      'long_name':'surface mass balance'}
         elif (varname == 'melt') & ((varname in output_request) | np.any(melt)):
+            isfind = 1
             if ~np.any(melt):
                 value = semic.Result.melt.get_value()
             else:
@@ -85,6 +87,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'m w.e. s-1',
                      'long_name':'surface melting'}
         elif (varname == 'tsurf') & ((varname in output_request) | np.any(tsurf)):
+            isfind = 1
             if ~np.any(tsurf):
                 value = semic.Result.tsurf.get_value()
             else:
@@ -92,6 +95,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'K',
                      'long_name':'surface temperature'}
         elif (varname == 'alb') & ((varname in output_request) | np.any(alb)):
+            isfind = 1
             if ~np.any(alb):
                 value = semic.Result.alb.get_value()
             else:
@@ -99,6 +103,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'-',
                      'long_name':'integrated surface albedo considering snow, ice, and land.'}
         elif (varname == 'alb_snow') & ((varname in output_request) | np.any(alb_snow)):
+            isfind = 1
             if ~np.any(alb_snow):
                 value = semic.Result.alb_snow.get_value()
             else:
@@ -106,6 +111,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'-',
                      'long_name':'snow albedo'}
         elif (varname == 'hsnow') & ((varname in output_request) | np.any(hsnow)):
+            isfind = 1
             if ~np.any(hsnow):
                 value = semic.Result.hsnow.get_value()
             else:
@@ -113,6 +119,7 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'m',
                      'long_name':'snow height'}
         elif (varname == 'subl') & ((varname in output_request) | np.any(subl)):
+            isfind = 1
             if ~np.any(subl):
                 value = semic.Result.subl.get_value()
             else:
@@ -120,24 +127,25 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
             attrs = {'units':'m w.e. s-1',
                      'long_name':'sublimation rate'}
         elif (varname == 'evap') & ((varname in output_request) | np.any(evap)):
+            isfind = 1
             if ~np.any(evap):
                 value = semic.Result.evap.get_value()
             else:
                 value = evap
             attrs = {'units':'m w.e s-1',
                      'long_name':'evapotranspiration'}
-        elif (varname == 'swsn') & ((varname in output_request) | np.any(swsn)):
+        elif (varname == 'swsn') & np.any(swsn):
+            isfind = 1
             if ~np.any(swsn):
                 value = semic.Result.swsn.get_value()
             else:
                 value = swsn
             attrs = {'units':'W m-2',
                      'long_name':'net downward shortwave radiation = (1-alpha)*swd.'}
-        else:
-            raise Exception('ERROR: Given variable name (=%s) is not supported.'%(varname))
 
-        nc[varname] = xarray.DataArray(value.astype(data_type).T, dims=('time','ncells'),
-                                       attrs=attrs)
+        if isfind:
+            nc[varname] = xarray.DataArray(value.astype(data_type).T, dims=('time','ncells'),
+                                           attrs=attrs)
 
     print(f'Save {fname}')
     if not fname is None:
