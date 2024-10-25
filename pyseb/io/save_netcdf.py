@@ -5,7 +5,8 @@ import xarray
 import warnings
 
 __all__ = ['save_netcdf']
-def save_netcdf(elements, x, y, semic, time:list, fname:str=None, data_type:type=np.float32): # {{{
+def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
+                elements=None, x=None, y=None): # {{{
     '''
     Explain
     -------
@@ -31,24 +32,33 @@ def save_netcdf(elements, x, y, semic, time:list, fname:str=None, data_type:type
     data_type: str (default: np.float32)
         data type for "xarray.DataArray".
 
+    elements: list (default: None)
+
     Ouput
     -----
     nc: xarray.Dataset
         Result array defined in "xarray.Dataset".
     '''
-    #raise Exception('ERROR: This is under development.')
 
     nx    = semic.nx # load number of grid.
     ntime = len(time) # time stamp for semic simulation.
+    #print(f'nx    = {nx}')
+    #print(f'ntime = {ntime}')
     if ntime == 1:
         raise Exception('ERROR!')
 
     # Initialize Dataset array.
-    nc = xarray.Dataset(coords={'time':time,'ncells':np.arange(nx),
-                                'elements':(('nelem','ntri'),elements),
-                                'x':('ncells',x),
-                                'y':('ncells',y),
-                                })
+    nc = xarray.Dataset(coords={'time':(('time'),np.arange(ntime)),
+                                'ncells':(('ncells'),np.arange(nx))})
+    #nc['time']   = xarray.DataArray(time, dims='time')
+    #nc['ncells'] = xarray.DataArray(np.arange(nx), dims='ncells')
+
+    if np.any(elements):
+        nc.coords.update({'elements':(('nelem','ntri'), elements)})
+    if np.any(x):
+        nc.coords.update({'x':(('ncells'), x)})
+    if np.any(y):
+        nc.coords.update({'y':(('ncells'), y)})
 
     # Check given data type
     if not data_type in (np.float32, np.float64, float):
@@ -57,6 +67,7 @@ def save_netcdf(elements, x, y, semic, time:list, fname:str=None, data_type:type
     # check requested output
     output_request = semic.output_request
     for varname in output_request:
+        print(f'   load result: {varname}')
         if varname in 'smb':
             value = semic.Result.smb.get_value()
             attrs = {'units':'m w.e. s-1',
@@ -92,7 +103,8 @@ def save_netcdf(elements, x, y, semic, time:list, fname:str=None, data_type:type
         else:
             raise Exception('ERROR: Given variable name (=%s) is not supported.'%(varname))
 
-        nc[varname] = xarray.DataArray(value.astype(data_type).T, dims=('time','ncells'))
+        nc[varname] = xarray.DataArray(value.astype(data_type).T, dims=('time','ncells'),
+                                       attrs=attrs)
 
     print(f'Save {fname}')
     if not fname is None:
