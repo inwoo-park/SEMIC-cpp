@@ -6,7 +6,9 @@ import warnings
 
 __all__ = ['save_netcdf']
 def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
-                elements=None, x=None, y=None): # {{{
+                elements=None, x=None, y=None,
+                # output results
+                smb=None, melt=None, tsurf=None, alb=None, alb_snow=None, subl=None, evap=None, hsnow=None, swsn=None): # {{{
     '''
     Explain
     -------
@@ -66,40 +68,71 @@ def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
 
     # check requested output
     output_request = semic.output_request
-    for varname in output_request:
+    for varname in ['smb','melt','tsurf','alb','alb_snow','subl','evap','swsn']:
         print(f'   load result: {varname}')
-        if varname in 'smb':
-            value = semic.Result.smb.get_value()
+        if (varname == 'smb') & ((varname in output_request) | np.any(smb)):
+            if ~np.any(smb):
+                value = semic.Result.smb.get_value()
+            else:
+                value = smb
             attrs = {'units':'m w.e. s-1',
                      'long_name':'surface mass balance'}
-        elif varname in 'melt':
-            value = semic.Result.melt.get_value()
+        elif (varname == 'melt') & ((varname in output_request) | np.any(melt)):
+            if ~np.any(melt):
+                value = semic.Result.melt.get_value()
+            else:
+                value = melt
             attrs = {'units':'m w.e. s-1',
                      'long_name':'surface melting'}
-        elif varname in 'tsurf':
-            value = semic.Result.tsurf.get_value()
+        elif (varname == 'tsurf') & ((varname in output_request) | np.any(tsurf)):
+            if ~np.any(tsurf):
+                value = semic.Result.tsurf.get_value()
+            else:
+                value = tsurf
             attrs = {'units':'K',
                      'long_name':'surface temperature'}
-        elif varname in 'alb':
-            value = semic.Result.alb.get_value()
+        elif (varname == 'alb') & ((varname in output_request) | np.any(alb)):
+            if ~np.any(alb):
+                value = semic.Result.alb.get_value()
+            else:
+                value = alb
             attrs = {'units':'-',
                      'long_name':'integrated surface albedo considering snow, ice, and land.'}
-        elif varname in 'alb_snow':
-            value = semic.Result.alb_snow.get_value()
+        elif (varname == 'alb_snow') & ((varname in output_request) | np.any(alb_snow)):
+            if ~np.any(alb_snow):
+                value = semic.Result.alb_snow.get_value()
+            else:
+                value = alb_snow
             attrs = {'units':'-',
                      'long_name':'snow albedo'}
-        elif varname in 'hsnow':
-            value = semic.Result.hsnow.get_value()
+        elif (varname == 'hsnow') & ((varname in output_request) | np.any(hsnow)):
+            if ~np.any(hsnow):
+                value = semic.Result.hsnow.get_value()
+            else:
+                value = hsnow
             attrs = {'units':'m',
                      'long_name':'snow height'}
-        elif varname in 'subl':
-            value = semic.Result.subl.get_value()
+        elif (varname == 'subl') & ((varname in output_request) | np.any(subl)):
+            if ~np.any(subl):
+                value = semic.Result.subl.get_value()
+            else:
+                value = subl
             attrs = {'units':'m w.e. s-1',
                      'long_name':'sublimation rate'}
-        elif varname in 'evap':
-            value = semic.Result.evap.get_value()
+        elif (varname == 'evap') & ((varname in output_request) | np.any(evap)):
+            if ~np.any(evap):
+                value = semic.Result.evap.get_value()
+            else:
+                value = evap
             attrs = {'units':'m w.e s-1',
                      'long_name':'evapotranspiration'}
+        elif (varname == 'swsn') & ((varname in output_request) | np.any(swsn)):
+            if ~np.any(swsn):
+                value = semic.Result.swsn.get_value()
+            else:
+                value = swsn
+            attrs = {'units':'W m-2',
+                     'long_name':'net downward shortwave radiation = (1-alpha)*swd.'}
         else:
             raise Exception('ERROR: Given variable name (=%s) is not supported.'%(varname))
 
