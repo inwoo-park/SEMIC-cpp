@@ -6,7 +6,7 @@ import warnings
 
 __all__ = ['save_netcdf']
 def save_netcdf(semic, time:list, fname:str=None, data_type:type=np.float32,
-                elements=None, x=None, y=None,
+                elements=[], x=[], y=[],
                 # output results
                 smb=[], melt=[], tsurf=[], alb=[], alb_snow=[], subl=[], evap=[], hsnow=[], swsn=[]): # {{{
     '''
