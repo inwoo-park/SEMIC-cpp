@@ -21,9 +21,9 @@ const double CLM 	= 3.3e+5; 	/* latent heat of melting (J kg-1)*/
 const double CLV 	= 2.5e+6; 	/* latent heat of condensation (J kg-1) */
 const double CAP  	= 1000.;  	/* specific heat capacity of air (J kg-1 K-1) */
 const double RHOW 	= 1000.;  	/* density of water (kg m-3) */
-const double HSMAX 	= 5; 		/* maximum snow height (m) */
+const double HSMAX 	= 5.; 		/* maximum snow height (m) */
 
-const double EPSILON = numeric_limits<double>::epsilon(); /* epsilon */
+const double EPSILON = numeric_limits<double>::epsilon(); /* epsilon smallest double precision number */
 //const double EPSILON = 1e-16; /* epsilon */
 
 using namespace std;
@@ -92,7 +92,7 @@ class SEMIC{ /* {{{ */
 		void		InitializeParameters(void);
 		void		Display();
 		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		void 		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m, double &shf);
+		double   SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m);
 		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const);
 		void 		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double sp, double qq, double &evap, double &subl, double &lhf);
 		double SaturateWaterVaporP(double temperature);
