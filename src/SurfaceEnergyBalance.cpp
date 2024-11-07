@@ -9,7 +9,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
-    this->Result = new SemicResult();
+   this->Result = new SemicResult();
 
 	this->verbose = true;
 
@@ -79,7 +79,6 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 
 	/* Initialize parameters */
 	this->n_ksub = 3;
-	this->Param->ceff = 2e+6;
 	this->Param->tstic = 86400.;
 
 	this->Param->albi = 0.07;
@@ -129,17 +128,19 @@ void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* 
 		this->shf[i] = csh * cap * this->rhoa[i] * this->wind[i] * (this->tsurf[i] - this->t2m[i]);
 } /* }}} */
 
-void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m, double &shf) {/* {{{ */
-	/*
+double SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m) {/* {{{ */
+	/* semic-f90: sensible_heat_flux
 	Calcaulate sensible heat flux with given variable
 
 	shf - return value: sensible heat flux
 	*/
 	double csh=Param->csh; /* sensible heat exchange coefficient */
 	double cap=Const->cap; /* air specific heat capacity */
+	double shf=0.0; /* sensible heat flux */
 	
 	/* sensible heat flux */
 	shf = csh * cap * rhoa * wind * (tsurf - t2m);
+	return shf;
 } /* }}} */
 
 void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*/
@@ -211,17 +212,18 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double
 	double shumidity_sat=0.0; /* Specific humidity */
 	double sat_vaporP=0.0; /* Saturated water vapor pressure */
 
+	/* From Parameters */
 	double clh=Param->clh;
-	double cls=Const->cls;
+
+	/* From Constants */
+	double cls=Const->cls; 
 	double clv=Const->clv;
 	
-	// if (this->verbose) cout << "calculate latent heat flux\n";
 	/* Initialize variable */
 	subl = 0.0;
 	lhf  = 0.0;
 	evap = 0.0;
 
-	// #pragma omp parallel for schedule(dynamic)
 	if (tsurf < T0){
 		sat_vaporP = this->ei_sat(tsurf);
 		/* specific humidity at surface (assumed to be saturated) is */
@@ -240,7 +242,6 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double
 	}
 } /*}}}*/
 
-
 void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 	/* Calculate upward long-wave radiation with Stefan-Boltzman law
 
@@ -251,7 +252,7 @@ void SEMIC::LongwaveRadiationUp(){ /*{{{*/
 	if (this->verbose) cout << "calculate upward long-wave radiation.\n";
 
 	for (int i=0; i < nx; i++)
-		this->lwup[i] = SIGMA*pow(this->tsurf[i], 4.0);
+		this->LongwaveRadiationUp(tsurf[i], this->lwup[i]);
 } /*}}}*/
 
 void SEMIC::LongwaveRadiationUp(double tsurf, double &lwup){ /*{{{*/
@@ -500,10 +501,9 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
 
-		this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i], this->shf[i]);
+		this->shf[i] = this->SensibleHeatFlux(this->Param, this->Const, this->rhoa[i], this->wind[i], this->tsurf[i], this->t2m[i]);
 	}
 
-	//#pragma omp master
 	if (this->verbose && thread_id == 0)
 		cout << "   step2: Calculate the latent heat flux\n";
 
@@ -518,7 +518,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if (this->verbose && thread_id == 0)
 		cout << "   step3: Surface physics: long-wave radiation\n";
 	
-	#pragma omp for //schedule(dynamic)
+	#pragma omp for
 	for (int i=0; i<nx; i++)
 		this->LongwaveRadiationUp(this->tsurf[i], this->lwup[i]);
 	
@@ -527,8 +527,8 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if ((this->verbose) & (thread_id == 0))
 		cout << "   step4: calculate surface energy balance\n";
 
-	#pragma omp for //schedule(dynamic)
-	for (i=0; i<nx; i++){
+	#pragma omp for
+	for (int i=0; i<nx; i++){
 		qsb[i] = (1. - this->alb[i])*this->swd[i] + this->lwd[i] - this->lwup[i] - this->shf[i] - this->lhf[i] - this->qmr_res[i];
 	}
 
@@ -537,7 +537,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 	if ((this->verbose) & (thread_id == 9))
 		cout << "   step5: update surface temperature\n";
 
-	#pragma omp for //schedule(dynamic)
+	#pragma omp for 
 	for (int i=0; i<nx; i++){
 
 		this->qmr[i] = 0.0; /* set qmr as zeros. */
@@ -558,7 +558,7 @@ void SEMIC::RunEnergyBalance() { /* {{{ */
 
 	#pragma omp for //schedule(dynamic)
 	for (int i=0; i<nx; i++){
-		if ((this->mask[i] == 2) || (this->hsnow[i] > 0)){
+		if ((this->mask[i] == 2) || (this->hsnow[i] > 0.0)){
 			this->t2m[i] = this->t2m[i] + (this->shf[i] + this->lhf[i]) * this->Param->tsticsub / this->Param->ceff;
 		}
 	}
@@ -574,7 +574,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	*/
 	int i;
 	int nx = this->nx;
-    double f_rz; 
+	double f_rz; 
 	DoubleVector above(nx,0.0), below(nx,0.0);
 	DoubleVector qmelt(nx,0.0), qcold(nx,0.0);
 	DoubleVector snow_to_ice_input(nx, 0.0);
@@ -602,13 +602,6 @@ void SEMIC::RunMassBalance(){/*{{{*/
 	{
 	 thread_id = omp_get_thread_num(); /* get master thread */
 
-    //#pragma omp master
-    if ((thread_id == 0) & (this->verbose)){
-        /* Check variable */
-        cout << "RHOW = " << RHOW << endl;
-        cout << "CLM  = " << CLM << endl;
-    }
-
 	#pragma omp for //schedule(dynamic)
 	for (i=0; i<nx; i++){
 		/* 1. Calculate above/below freezing temperature for a given mean temeprature*/
@@ -618,7 +611,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 			cout << "      qmr  = " << this->qmr[i] << endl;
 			cout << "      Tamp = " << this->Param->amp[i] << endl;
 		}
-		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff*this->Param->tstic,
+		this->DiurnalCycle(this->tsurf[i] - T0 + this->qmr[i]/this->Param->ceff * this->Param->tstic,
 					this->Param->amp[i], above[i], below[i]);
 		
 		if (i==0 && this->verbose){
@@ -708,7 +701,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 
 		snow_to_ice = max(0.0, this->hsnow[i] - HSMAX);
 		/* save temporal data set.*/
-		snow_to_ice_input[i] = snow_to_ice;
+		//snow_to_ice_input[i] = snow_to_ice;
 
 		this->hsnow[i] = this->hsnow[i] - snow_to_ice;
 		this->smb_ice[i] = (snow_to_ice)/(this->Param->tstic) - this->melted_ice[i] + refrozen_rain[i];
@@ -720,7 +713,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		/* 11. Total surface mass balance */
 		if (i==0 && this->verbose)
 			cout << "   step11: total surface mass balance\n";
-		snow_to_ice = snow_to_ice_input[i];
+		//snow_to_ice = snow_to_ice_input[i];
 		if (this->mask[i] == 2){
 			this->smb[i] = this->smb_snow[i] + this->smb_ice[i] - snow_to_ice/this->Param->tstic;
 		}
@@ -852,7 +845,6 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
     assert(this->nx == Forcings->nx);
 
     /* Initialize new Result class {{{ */
-    // this->Result = new SemicResult(); /* Initialize emtpy array */
     if (this->Result->iscontain(this->output_request, "smb")){
 #ifdef HAVE_DEBUG
             cout << "SemicResults: Set SMB!\n";
@@ -871,6 +863,10 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
 #endif
         this->Result->alb->set_dimension(nx,ntime);
     }
+    if (this->Result->iscontain(this->output_request, "smb_snow"))
+        this->Result->smb_snow->set_dimension(nx,ntime);
+    if (this->Result->iscontain(this->output_request, "smb_ice"))
+        this->Result->smb_ice->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "alb_snow"))
         this->Result->alb_snow->set_dimension(nx,ntime);
     if (this->Result->iscontain(this->output_request, "tsurf"))
@@ -886,7 +882,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
 
 	 /* }}} */
 
-	 /* sub time stepping */
+	 /* sub-time stepping */
 	 this->Param->tsticsub = this->Param->tstic/this->n_ksub;
 
 	//  DoubleVector sf, rf, sp;
@@ -951,6 +947,10 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
                 for (i=0; i<nx; i++){
                     if (this->Result->iscontain(this->output_request, "smb"))
                         this->Result->smb->value[i][j]   = this->smb[i];
+                    if (this->Result->iscontain(this->output_request, "smb_snow"))
+                        this->Result->smb_snow->value[i][j]   = this->smb_snow[i];
+                    if (this->Result->iscontain(this->output_request, "smb_ice"))
+                        this->Result->smb_ice->value[i][j]   = this->smb_ice[i];
                     if (this->Result->iscontain(this->output_request, "melt"))
                         this->Result->melt->value[i][j]  = this->melt[i];
                     if (this->Result->iscontain(this->output_request, "tsurf"))

@@ -16,7 +16,6 @@ using namespace std;
 
 class SemicParameters{ /* {{{ */
 	public:
-		double ceff; /* Surface specific heat capacity of snow/ice [J K-1 m-2] */
 		double albi; /* Background albedo (bare ice) [no unit] */
 		double albl; /* Background albedo (bare land) [no unit] */
 		double alb_smax; /* Maximum snow albedo (fresh snow) [no unit] */
@@ -26,8 +25,6 @@ class SemicParameters{ /* {{{ */
 		double hcrit; /* Critical snow height for which grid cell is 50% snow covered */
 		double rcrit; /* Critical snow height for which refreezing fraction is 50% */
 		DoubleVector amp;   /* Amplitude of diuranl cycle [unit: K] */
-		double csh;   /* Sensible heat exchange coefficient */
-		double clh;   /* Latent heat exchange coefficient [no unit] */
 		
 		double tmin;  /* Minimum temperature for which albedo decline becomes effective ('slater') [unit: K] */
 		double tmax;  /* Maximum temperature for which albedo decline becomes effective ('slater') [unit: K] */
@@ -42,28 +39,29 @@ class SemicParameters{ /* {{{ */
 
 		double mcrit;  /* critical melt rate for "isba" and "denby" albedo scheme [unit: m s-1]*/
 		double tmid;   /* parameter for "alex" albedo parameterization [unit: K]*/
-		// double clv;   /* latent heat of sublimation */
-		// double cls;   /* latent heat of vaporization */
-		// double cap;   /* air specific heat capacity */
 
-        SemicParameters(){
-            this->amp = DoubleVector(0, 0.0);
+		double ceff=2e+6; /* surface specific heat capacity of snow/ice [J K-1 m-2] */
+		double csh=2e-3;  /* sensible heat exchange coefficient [no unit] */
+		double clh=5e-4;  /* latent heat exchange coefficient [no unit] */
+
+		SemicParameters(){
+			this->amp = DoubleVector(0, 0.0);
 			this->alb_scheme_sum = 0;
-        }
-        ~SemicParameters(){
-            this->amp.clear();
-        }
+      }
+      ~SemicParameters(){
+			this->amp.clear();
+      }
 }; /* }}} */
 
 class SemicConstants{ /* {{{ */
 public:
-	double cls=2.83e+6; /* latent heat of sublimation [unit: J kg-1] */
-	double clm=3.3e+5;  /* latent heat of melting [unit: J kg-1] */
-	double clv=2.5e+6;  /* latent heat of condensation [unit: J kg-1] */
+	double cls=2.83e+6;  /* latent heat of sublimation [unit: J kg-1] */
+	double clm=3.3e+5;   /* latent heat of melting [unit: J kg-1] */
+	double clv=2.5e+6;   /* latent heat of condensation [unit: J kg-1] */
 	double cap=1e+3;  	/* specific heat capacity of air [unit: J kg-1 K-1]*/
+
 	double rhow=1e+3; 	/* density of water [kg m-3]*/
-	double hsmax=5; 	/* maximum snow height [m] */
-	// double epsil
+	double hsmax=5; 	   /* maximum snow height [m] */
 	
 	void Display(void){
 		cout << "cls    " << this->cls  << " latent heat of sublimation (unit: J kg-)" << endl;
@@ -153,7 +151,7 @@ class SemicForcings{ /* {{{ */
 
 class SemicResult{ /* {{{ */
     public:
-        vector<string> output_request;
+        //vector<string> output_request; /* NOTE: do not use anymore! */
         vector<string> output_list = {"smb", "smb_snow","smb_ice",
 				"tsurf","melt","alb","hsnow","hice","evap","subl"};
         DoubleMatrix *smb;
@@ -187,14 +185,16 @@ class SemicResult{ /* {{{ */
             this->evap = new DoubleMatrix();
 
             /* Initialize output requests */
-            this->output_request.push_back("smb");
-            this->output_request.push_back("smb_snow");
-            this->output_request.push_back("smb_ice");
-            this->output_request.push_back("melt");
-            this->output_request.push_back("alb");
-            this->output_request.push_back("tsurf");
-            this->output_request.push_back("hsnow");
-            this->output_request.push_back("hice");
+            //this->output_request.push_back("smb");
+            //this->output_request.push_back("smb_ice");
+            //this->output_request.push_back("smb_snow");
+
+            //this->output_request.push_back("alb");
+            //this->output_request.push_back("melt");
+
+            //this->output_request.push_back("tsurf");
+            //this->output_request.push_back("hsnow");
+            //this->output_request.push_back("hice");
 
             //this->output_list = {"smb", "smb_snow",
             //"smb_ice",
@@ -212,10 +212,10 @@ class SemicResult{ /* {{{ */
             this->melt     = new DoubleMatrix(nrow, ncol);
             this->tsurf    = new DoubleMatrix(nrow, ncol);
             this->hsnow    = new DoubleMatrix(nrow, ncol);
-            this->hice    = new DoubleMatrix(nrow, ncol);
+            this->hice     = new DoubleMatrix(nrow, ncol);
 
-            this->subl = new DoubleMatrix(nrow, ncol);
-            this->evap = new DoubleMatrix(nrow, ncol);
+            this->subl     = new DoubleMatrix(nrow, ncol);
+            this->evap     = new DoubleMatrix(nrow, ncol);
         } /* }}} */
 
         ~SemicResult(){ /* {{{ */
@@ -258,6 +258,7 @@ class SemicResult{ /* {{{ */
 			   cout << "SemicResult: Destroy memory!\n";
 #endif
 
+				delete this->smb;
 #ifdef HAVE_DEBUG
 			   cout << "Destroy memory: smb_ice\n";
 #endif
@@ -268,20 +269,23 @@ class SemicResult{ /* {{{ */
             delete this->smb_snow;
 
 #ifdef HAVE_DEBUG
-			   cout << "Destroy memory: alb\n";
-#endif
-            delete this->alb;
-
-            delete this->alb_snow;
-
-#ifdef HAVE_DEBUG
 			   cout << "Destroy memory: smb_melt\n";
 #endif
             delete this->melt;
-            delete this->tsurf;
+
+#ifdef HAVE_DEBUG
+			   cout << "Destroy memory: alb\n";
+#endif
+            delete this->alb;
+            delete this->alb_snow;
+
+				delete this->hsnow;
+				delete this->hice;
 
             delete this->subl;
             delete this->evap;
+
+            delete this->tsurf;
 		    }
 
         /* search if specific string in string array */

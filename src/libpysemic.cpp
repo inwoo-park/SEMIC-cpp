@@ -12,9 +12,11 @@ namespace py = pybind11;
 PYBIND11_MODULE(libpysemic, m){
 	m.doc() = "SEMIC module in python.";
 
-	py::class_<SemicParameters>(m, "Param")
+	py::class_<SemicParameters>(m, "Param") /* {{{ */
 	  .def(py::init<>())
 	  .def_readwrite("ceff",&SemicParameters::ceff)
+	  .def_readwrite("csh",&SemicParameters::csh)
+	  .def_readwrite("clh",&SemicParameters::clh)
 	  .def_readwrite("albi",&SemicParameters::albi)
 	  .def_readwrite("albl",&SemicParameters::albl)
 	  .def_readwrite("alb_smax",&SemicParameters::alb_smax)
@@ -23,8 +25,6 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def_readwrite("hcrit",&SemicParameters::hcrit)
 	  .def_readwrite("rcrit",&SemicParameters::rcrit)
 	  .def_readwrite("amp",&SemicParameters::amp)
-	  .def_readwrite("csh",&SemicParameters::csh)
-	  .def_readwrite("clh",&SemicParameters::clh)
 	  .def_readwrite("tmin",&SemicParameters::tmin)
 	  .def_readwrite("tmax",&SemicParameters::tmax)
 	  .def_readwrite("tstic",&SemicParameters::tstic)
@@ -34,6 +34,7 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def_readwrite("w_crit",&SemicParameters::w_crit)
 	  .def_readwrite("mcrit",&SemicParameters::mcrit)
 	  .def_readwrite("tmid",&SemicParameters::tmid);
+	/* }}} */
 
 	py::class_<SemicConstants>(m, "Const") /*{{{*/
 	  .def(py::init<>())
@@ -74,7 +75,7 @@ PYBIND11_MODULE(libpysemic, m){
         .def_readwrite("hice", &SemicResult::hice)
         .def_readwrite("subl", &SemicResult::subl)
         .def_readwrite("evap", &SemicResult::evap)
-        .def_readwrite("output_request", &SemicResult::output_request)
+        //.def_readwrite("output_request", &SemicResult::output_request)
         .def_readwrite("output_list", &SemicResult::output_list)
 		  .def("free_memory", &SemicResult::free_memory)
         .def(py::init<int, int>())
