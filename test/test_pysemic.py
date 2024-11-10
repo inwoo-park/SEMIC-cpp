@@ -5,6 +5,7 @@ import os, sys, platform
 import pyseb
 import socket
 hostname = socket.gethostname().lower().replace('-','')
+dirname = os.path.dirname(__file__) # get current directory
 
 isplot = 0
 
@@ -13,7 +14,7 @@ from memory_profiler import profile
 import psutil
 
 # load src
-sys.path.insert(0, './src')
+sys.path.insert(0, os.path.join(dirname, 'src'))
 from load_era5_forcing import load_era5_forcing
 
 def InitializeSEMIC(nx): # {{{
@@ -647,7 +648,7 @@ def test_OutputRequest(): # {{{
 
     print('Save temporal file')
     time_dummy = np.arange(ntime)
-    pyseb.io.save_netcdf(semic, './temp.nc', time_dummy)
+    pyseb.io.save_netcdf(semic, time=time_dummy, fname='./temp.nc')
 
     smb = semic.Result.smb.get_value()
     melt = semic.Result.melt.get_value()
