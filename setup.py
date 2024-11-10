@@ -13,7 +13,7 @@ Reference
 '''
 
 # Initialize version.
-__version__ = '0.3'
+__version__ = '0.4.1'
 
 copt = {'linux':[]}
 lopt = {'linux':[]}
@@ -88,6 +88,7 @@ setup(
             'netCDF4',
             'memory-profiler', # for checking memory leakage.
             'scipy','pytest',
+            'nbmake', # for testing ipynb file.
         ],
         # which required directory?
         packages=find_packages(include=['pyseb']),
