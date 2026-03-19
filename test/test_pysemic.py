@@ -592,6 +592,9 @@ def test_OutputRequest(): # {{{
     _dirname = os.path.dirname(__file__)
     os.chdir(_dirname)
 
+    # load Antarctica
+    md = pyseb.io.loadmodel_netcdf('../data/ANT_Mesh.nc')
+
     force = scipy.io.loadmat('../data/Prepare/ANT_InterpERA5_Day_1980.mat')
     ntime, nx = force['t2m'].shape
     #nx   = 1 # only 100 nodes are required
@@ -637,6 +640,7 @@ def test_OutputRequest(): # {{{
 
     # show default request output
     print(f'Request output = {semic.output_request}')
+    print(f'semic.nx = {semic.nx}')
 
     # now, modify
     semic.output_request = ['smb','melt','tsurf']
