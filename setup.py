@@ -3,20 +3,15 @@ import pybind11
 import sys
 import sysconfig # check default compiler for python.
 from pybind11.setup_helpers import Pybind11Extension, build_ext
-from setuptools import setup, find_packages, Extension
-from distutils.sysconfig import get_config_vars
- 
-'''
+from setuptools import setup, find_packages
 
+"""
 Reference
 * https://stackoverflow.com/questions/724664/python-distutils-how-to-get-a-compiler-that-is-going-to-be-used
-'''
+"""
 
 # Initialize version.
 __version__ = '0.4.1'
-
-copt = {'linux':[]}
-lopt = {'linux':[]}
 
 # Check python's default compiler set.
 def CheckCompiler(): # {{{
@@ -30,8 +25,7 @@ def CheckCompiler(): # {{{
     # }}}
 
 # OpenMP flags depending on the compiler
-extra_compile_args = []
-#extra_compile_args = ['-std=c++11']
+extra_compile_args = ['-std=c++11']
 if sys.platform == "win32":
     extra_compile_args += ['/openmp']
 else:
@@ -74,23 +68,20 @@ setup(
         author_email='inwoopark0415@gmail.com',
         description='SEMIC in python and cpp version',
         ext_modules=ext_modules,
-        extras_require={'test':'pytest'},
+        extras_require={'test': ['pytest']},
         cmdclass={'build_ext':build_ext},
         zip_safe=False,
         python_requires='>=3.9',
-        #setup_requires=['pybind11'],
         install_requires=[
-            'pybind11',
             'numpy<2',
             'matplotlib',
             'tqdm',
             'xarray',
             'netCDF4',
-            'memory-profiler', # for checking memory leakage.
-            'scipy','pytest',
-            'nbmake', # for testing ipynb file.
+            'memory-profiler', # for checking memory leakage
+            'scipy',
+            'pytest',
+            'nbmake', # for testing jupyter notebooks
         ],
-        # which required directory?
         packages=find_packages(include=['pyseb']),
-        # package_dir={'./':["*.so","*.pyd"]},
     )

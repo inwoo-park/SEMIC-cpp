@@ -4,15 +4,24 @@ This repository wraps up SEMIC (Surface Energy and Mass balance model of Interme
 
 The original SEMIC written in `Fortran` is available at following site: `https://github.com/mkrapp/semic`.
 
-# Install
+# Install `SEMIC-cpp` module
 
 ## Required Packages in python
 
 * `pybind11` - for compiling SEMIC written in  `cpp`.
 * `numpy`
 * `matplotlib`
+* `xarray` - for handling netCDF files.
+* `ipykernel` - for running jupyter notebook.
+* `nbmake` - for testing jupyter notebooks.
 
 ## Install
+
+* To install the `pyseb` in `SEMIC-cpp` project, use following command.
+
+```bash
+pip install -e .
+```
 
 * To install the `pySEMIC.cpp` for running SEMIC written in cpp (SEMIC-cpp), use following command.
 * This work is only tested in `linux` machine, `not window` machine.
@@ -49,7 +58,6 @@ ntime = 365 # number of timestep in day
 
 semic = pyseb.SEMIC()
 semic.Initialize(nx)
-
 ```
 
 # Check runtime with using OpenMP
@@ -58,8 +66,11 @@ semic.Initialize(nx)
 
 Figure. Runtime of SEMIC depending on number of threads using OpenMP. To operate testing runtime, SIMBA machine is used.
 
-
 # References
 
 * Krapp, M., Robinson, A., and Ganopolski, A.: SEMIC: an efficient surface energy and mass balance model applied to the Greenland ice sheet, The Cryosphere, 11, 1519–1535, [https://doi.org/10.5194/tc-11-1519-2017](https://doi.org/10.5194/tc-11-1519-2017), 2017.
-*
+* 
+
+# Release note
+
+[Release note](./docs/Release_note.md)

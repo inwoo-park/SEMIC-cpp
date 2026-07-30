@@ -1,0 +1,3 @@
+# Default settings for building packages
+pybind11
+setuptools

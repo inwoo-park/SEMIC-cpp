@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64", "wheel", "pybind11", "pytest","nbmake",
+            "ipykernel","numpy","matplotlib","xarray"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyseb"
+version = "0.4.1"
+requires-python = ">=3.9"
+dependencies = [
+    "pybind11",
+    "numpy",
+    "matplotlib",
+    "xarray",
+    "netCDF4",
+    "tqdm",
+    "scipy",
+    "memory-profiler",
+    "pytest",
+    "nbmake", # for testing jupyter notebooks
+]
+
+[tool.setuptools]
+include-package-data = true
