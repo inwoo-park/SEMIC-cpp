@@ -1,5 +1,5 @@
 {
-	"editor.wordWrap": "wordWrapColumn",
+	"editor.wordWrap": "on",
 	"[python]": {
 	"editor.insertSpaces": true,
 	"editor.tabSize": 4
@@ -11,5 +11,17 @@
         "USE_DEBUG":"OFF",
         "use_pybind11":"ON",
         "USE_OPENMP":"ON"
-    }
+	},
+	"python-envs.pythonProjects": [
+		{
+			"path": ".",
+			"envManager": "ms-python.python:venv",
+			"packageManager": "ms-python.python:pip"
+		}
+	],
+	"python.testing.pytestArgs": [
+		"."
+	],
+	"python.testing.unittestEnabled": false,
+	"python.testing.pytestEnabled": true
 }
