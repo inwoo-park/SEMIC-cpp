@@ -83,9 +83,9 @@ PYBIND11_MODULE(libpysemic, m){
 	 /* }}} */
 
 	py::class_<SEMIC>(m, "SEMIC") /* {{{ */
-	   .def_readwrite("Param",&SEMIC::Param)
+	   	.def_readwrite("Param",&SEMIC::Param)
 		.def_readwrite("Const",&SEMIC::Const)
-      .def_readwrite("Result",&SEMIC::Result)
+      	.def_readwrite("Result",&SEMIC::Result)
 		/* variables in SEMIC */
 		.def_readwrite("nx",&SEMIC::nx)
 		/* initialize forcing variables */
@@ -117,7 +117,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("qmr",&SEMIC::qmr)
 		.def_readwrite("qmr_res",&SEMIC::qmr_res)
 		.def_readwrite("verbose",&SEMIC::verbose)
-      .def_readwrite("n_ksub",&SEMIC::n_ksub)
+     	.def_readwrite("n_ksub",&SEMIC::n_ksub)
 		.def_readwrite("num_threads",&SEMIC::num_threads)
 		.def_readwrite("output_request", &SEMIC::output_request)
 		.def("Initialize",&SEMIC::Initialize)
@@ -147,17 +147,17 @@ PYBIND11_MODULE(libpysemic, m){
         .def("get_column", &DoubleMatrix::get_column_vector)
         .def("get_row", &DoubleMatrix::get_row_vector)
         //.def("set_value", (void (DoubleMatrix::*)(const vector<vector<double>>&)) &DoubleMatrix::set_value)
-	     .def("set_value", (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
-	     .def("set_value", (void (DoubleMatrix::*)(py::array_t<double>&)) &DoubleMatrix::set_value_python)
+	    .def("set_value", (void (DoubleMatrix::*)(const double)) &DoubleMatrix::set_value)
+	    .def("set_value", (void (DoubleMatrix::*)(py::array_t<double>&)) &DoubleMatrix::set_value_python)
 	    //.def("set_value_python", &DoubleMatrix::set_value_python)
         .def("get_value",        &DoubleMatrix::get_value_python, py::return_value_policy::copy)
         .def("get_value_list", &DoubleMatrix::get_value)
         .def("sum", (double (DoubleMatrix::*)(void)) &DoubleMatrix::sum)
-	     .def("mean", (double (DoubleMatrix::*)(void)) &DoubleMatrix::mean)
-		  .def("Destroy", &DoubleMatrix::Destroy)
+		.def("mean", (double (DoubleMatrix::*)(void)) &DoubleMatrix::mean)
+		.def("Destroy", &DoubleMatrix::Destroy)
         .def(py::init<>())
         .def(py::init<const vector<vector<double>>&>())
-		  .def(py::init<py::array_t<double, py::array::c_style>& >())
+		.def(py::init<py::array_t<double, py::array::c_style>& >())
         .def(py::init<int, int>()); /* Empty constructor */
 //         .def("__call__", static_cast<const double& (DoubleMatrix::*)(size_t, size_t) const>(&DoubleMatrix::operator()))
 //         .def("__call__", static_cast<double& (DoubleMatrix::*)(size_t, size_t)>(&DoubleMatrix::operator()))
