@@ -662,7 +662,7 @@ void SEMIC::RunMassBalance(){/*{{{*/
 		/* potential refreezing */
 		refrozen_rain[i] = min(this->refr[i], this->rf[i]);
 		/* potential refreezing snow */
-		refrozen_snow[i] = min(this->refr[i] - refrozen_rain[i], 0.);
+		refrozen_snow[i] = max(this->refr[i] - refrozen_rain[i], 0.);
 		/* actual refreezing snow*/
 		refrozen_snow[i] = min(refrozen_snow[i], this->melted_snow[i]);
 		/* actual refreezing */
