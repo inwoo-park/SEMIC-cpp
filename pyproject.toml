@@ -1,13 +1,15 @@
 [build-system]
-requires = ["setuptools>=64", "wheel", "pybind11", "pytest","nbmake",
-            "ipykernel","numpy","matplotlib","xarray"]
-build-backend = "setuptools.build_meta"
+requires = ["setuptools>=64", "wheel", "pybind11",
+				"scikit-build-core"]
+#build-backend = "setuptools.build_meta"
+build-backend = "scikit_build_core.build"
 
 [project]
 name = "pyseb"
 version = "0.4.1"
 requires-python = ">=3.9"
 dependencies = [
+	"ipykernel",
     "pybind11",
     "numpy",
     "matplotlib",
@@ -21,4 +23,8 @@ dependencies = [
 ]
 
 [tool.setuptools]
+packages = ["pyseb"]
 include-package-data = true
+
+[tool.scikit-build]
+build-dir="build/{wheel_tag}"

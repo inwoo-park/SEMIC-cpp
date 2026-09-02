@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0...3.20)
-project(SEMIC_cpp VERSION 0.1.0 LANGUAGES C CXX)
+project(SEMIC_cpp VERSION 0.1.0 LANGUAGES CXX Fortran)
 
 # Include default cmake package.
 include(CMakePrintHelpers)
@@ -14,12 +14,15 @@ include(CMakePrintHelpers)
 # 	message(FATAL_ERROR "Unsupported operating system.")
 # endif()
 
+# enable cmake testing
+enable_testing()
+
 # Set C++ standard.
 set(CMAKE_CXX_STANDARD 11)
 
 # Initialize variable.
-set(PYSEMIC libpysemic)
-set(libexample libexample)
+set(LibPySemic libpysemic)
+set(LibExample libexample)
 
 option(USE_OPENMP "Use OpenMP for parallelization" ON)
 option(use_pybind11 "Use pybind11" ON)
@@ -68,23 +71,25 @@ add_library(SemicLib STATIC src/SurfaceEnergyBalance.cpp
  )
 
 if (use_pybind11)
-	pybind11_add_module(${PYSEMIC} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
-	target_compile_definitions(${PYSEMIC} PRIVATE HAVE_PYBIND11)
+	# main module for pysemic
+	pybind11_add_module(${LibPySemic} src/libpysemic.cpp src/SurfaceEnergyBalance.cpp)
+	target_compile_definitions(${LibPySemic} PRIVATE HAVE_PYBIND11)
 	if (USE_DEBUG)
-		target_compile_definitions(${PYSEMIC} PRIVATE HAVE_DEBUG)
+		target_compile_definitions(${LibPySemic} PRIVATE HAVE_DEBUG)
 	endif()
 	if (USE_OPENMP AND OpenMP_CXX_FOUND)
-		target_link_libraries(${PYSEMIC} PRIVATE OpenMP::OpenMP_CXX)
+		target_link_libraries(${LibPySemic} PRIVATE OpenMP::OpenMP_CXX)
 		target_link_libraries(SemicLib PRIVATE OpenMP::OpenMP_CXX)
 	endif()
 
-	pybind11_add_module(${libexample} src/libexample.cpp src/libexample.cpp)
+	# example module for test
+	pybind11_add_module(${LibExample} src/libexample.cpp src/libexample.cpp)
 	if (USE_OPENMP AND OpenMP_CXX_FOUND)
-		target_link_libraries(${libexample} PRIVATE OpenMP::OpenMP_CXX)
+		target_link_libraries(${LibExample} PRIVATE OpenMP::OpenMP_CXX)
 	endif()
 endif()
 
-# Initialize SEMIC
+# Compile executable SEMIC with
 add_executable(SEMIC src/main.cpp)
 target_include_directories(SEMIC PUBLIC src)
 target_link_libraries(SEMIC SemicLib)
@@ -93,18 +98,52 @@ set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 # include_directories(src)
 
+# Compile original SEMIC written in fortran
+add_library(obj_semic_fortran OBJECT
+	src/semic-fortran/surface_physics.f90
+	src/semic-fortran/utils.f90
+)
+add_executable(test_semic_fortran_example test/fortran/example.f90
+	$<TARGET_OBJECTS:obj_semic_fortran>
+)
+
+# Test semic-fortran test.
+add_test(NAME TestSemicFortran COMMAND test_semic_fortran_example example.namelist)
+set_tests_properties(TestSemicFortran
+	PROPERTIES
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test/fortran/
+)
+# Test semic-fortran test: Albedo with Denby
+add_test(NAME TestSemicFortranDenby COMMAND test_semic_fortran_example example-denby.namelist)
+set_tests_properties(TestSemicFortranDenby
+	PROPERTIES
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test/fortran/
+)
+
+add_test(NAME TestSemicFortranSlater COMMAND test_semic_fortran_example example-slater.namelist)
+set_tests_properties(TestSemicFortranSlater
+	PROPERTIES
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/test/fortran/
+)
+
 # Test cpp test.
 add_executable(test_memory_leakage test/cpp/test_memory_leakage.cpp)
+add_test(NAME TestMemoryLeakage COMMAND test_memory_leakage)
 target_link_libraries(test_memory_leakage SemicLib)
 target_include_directories(test_memory_leakage PUBLIC src)
 
 # Install
 # install binary file
-install(TARGETS SEMIC  DESTINATION bin)
+#install(TARGETS SEMIC  DESTINATION bin)
 # install library file
 
 if (use_pybind11)
-	install(TARGETS ${PYSEMIC} DESTINATION lib)
-	install(TARGETS ${PYSEMIC} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb/)
-	install(TARGETS ${libexample} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb)
+	install(TARGETS ${LibPySemic}
+		LIBRARY DESTINATION pyseb
+	)
+	install(TARGETS ${LibExample}
+		LIBRARY DESTINATION pyseb
+	)
+	#install(TARGETS ${LibPySemic} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb/)
+	#install(TARGETS ${libexample} DESTINATION ${CMAKE_SOURCE_DIR}/pyseb)
 endif()

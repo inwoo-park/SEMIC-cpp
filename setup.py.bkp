@@ -73,6 +73,7 @@ setup(
         zip_safe=False,
         python_requires='>=3.9',
         install_requires=[
+            'ipykernel',
             'numpy<2',
             'matplotlib',
             'tqdm',
@@ -83,5 +84,5 @@ setup(
             'pytest',
             'nbmake', # for testing jupyter notebooks
         ],
-        packages=find_packages(include=['pyseb']),
+        packages=find_packages(include=['pyseb','pyseb.*']),
     )
