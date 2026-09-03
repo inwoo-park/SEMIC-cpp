@@ -9,7 +9,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 	/* nothing to do. */
 	this->Param = new SemicParameters();
 	this->Const = new SemicConstants();
-   this->Result = new SemicResult();
+	this->Result = new SemicResult();
 
 	this->verbose = true;
 
@@ -19,7 +19,7 @@ SEMIC::SEMIC(void){ /*{{{*/
 SEMIC::~SEMIC(void){ /*{{{*/
 	delete this->Param;
 	delete this->Const;
-   delete this->Result;
+	delete this->Result;
 } /*}}}*/
 
 void SEMIC::Initialize(int nx){ /* {{{ */
@@ -106,11 +106,17 @@ void SEMIC::InitializeParameters(void){ /*{{{*/
 	this->Param->mcrit = 6e-8;
 } /*}}}*/
 
-void SEMIC::Display(){ /* {{{ */
-	cout << this->nx << "\n";
-	for (int i=0; i<(int)this->smb.size(); i++){
-		cout << this->smb[i] << " " << this->t2m[i] << "\n";
-	}
+string SEMIC::repr() const{/* {{{ */
+	std::ostringstream ss;
+	ss << "number of grid = " << this->nx << "\n";
+	ss << "n_ksub         = " << this->n_ksub << "\n";
+	ss << "albedo scheme  = " << this->alb_scheme << " albedo scheme. 0: none, 1: slater, 2: denby, 3: ISBA, 4: Zeitz\n";
+	/* Return string */
+	return ss.str();
+}/* }}} */
+
+void SEMIC::Display(void){ /* {{{ */
+	cout << this->repr();
 } /* }}} */
 
 void SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const){ /* {{{ */
@@ -146,7 +152,7 @@ double SEMIC::SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, do
 void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*/
 	/* semic-f90: latent_heat_flux
 	Inputs
-	----------
+	------
 	sp   - surface pressure (unit: Pa).
 	wind - wind speed (unit: m s-1)
 
@@ -179,7 +185,7 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*
 		if (this->tsurf[i] < T0){
 			sat_vaporP[i] = this->ei_sat(this->tsurf[i]);
 			/* specific humidity at surface (assumed to be saturated) is */
-			shumidity_sat[i] = sat_vaporP[i] * EPSIL /(sat_vaporP[i]*(EPSIL-1.0)+ this->sp[i]);
+			shumidity_sat[i] = sat_vaporP[i] * EPSIL /(sat_vaporP[i]*(EPSIL-1.0) + this->sp[i]);
 			
 			this->subl[i] = clh*this->wind[i]*this->rhoa[i]*(shumidity_sat[i] - this->qq[i]);
 
@@ -199,11 +205,11 @@ void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const){/*{{{*
 void SEMIC::LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double sp, double qq, double &evap, double &subl, double &lhf){/*{{{*/
 	/* semic-f90: latent_heat_flux
 	Inputs
-	----------
+	------
 	sp   - surface pressure (unit: Pa).
 	wind - wind speed (unit: m s-1)
 
-	Ouputs (returns)
+	Ouputs
 	------
 	evap    - evapotranspiration
 	subl    - sublimation
@@ -889,6 +895,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
 	//  DoubleVector lwd, swd, wind, rhoa, t2m, qq;
 
     for (int _nloop=0; _nloop<nloop; _nloop++){
+		cout << "Loop : " << _nloop+1 << "/" << nloop << endl;
         for (j = 0; j<ntime; j++){
             if (this->verbose)
                 cout << "Time step " << j+1 << "/" << ntime << endl;
@@ -920,7 +927,7 @@ void SEMIC::RunEnergyAndMassBalance(SemicForcings* Forcings, int nloop){ /* {{{ 
             // #endif
 
             /* Now, use forcings variables! */
-            if (this->verbose) cout << "Run Energy Balance\n";
+            if (this->verbose) cout << "Run Energy Balance" << endl;
             tstart = chrono::system_clock::now();
             for (i=0; i < this->n_ksub; i++){
                 this->RunEnergyBalance();

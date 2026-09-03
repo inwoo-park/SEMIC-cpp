@@ -5,6 +5,7 @@
 #include <array> 
 #include <vector>
 #include <algorithm> /* for using "find" */
+#include <sstream>
 // #include "SemicArray.h"
 #include "DataArray.h"
 
@@ -44,31 +45,65 @@ class SemicParameters{ /* {{{ */
 		double csh=2e-3;  /* sensible heat exchange coefficient [no unit] */
 		double clh=5e-4;  /* latent heat exchange coefficient [no unit] */
 
-		SemicParameters(){
-			this->amp = DoubleVector(0, 0.0);
-			this->alb_scheme_sum = 0;
-      }
-      ~SemicParameters(){
-			this->amp.clear();
-      }
+    SemicParameters(){
+        this->amp = DoubleVector(0, 0.0);
+        this->alb_scheme_sum = 0;
+    }
+    ~SemicParameters(){
+       this->amp.clear();
+    }
+    string repr() const{/*{{{*/
+        std::ostringstream ss;
+        ss << "albi      " << std::scientific << this->albi << " ice albedo [-]\n";
+        ss << "albl      " << std::scientific << this->albl << " land albedo [-]\n";
+        ss << "alb_smax  " << std::scientific << this->alb_smax << " maximum snow albedo [-]\n";
+        ss << "alb_smin  " << std::scientific << this->alb_smax << " minimum snow albedo [-]\n";
+		  ss << "hcrit     " << std::scientific << this->hcrit << " critical snow height for which grid cell is 50% snow covered\n";
+		  ss << "rcrit     " << std::scientific << this->rcrit << " critical snow height for which freezing fraction is 50%\n";
+		  ss << "ceff      " << std::scientific << this->ceff << " surface specific heat capacity of snow/ice [J K-1 m-2]\n";
+		  ss << "csh       " << std::scientific << this->csh << " sensible heat exchange coefficient [no unit]\n";
+		  ss << "clh       " << std::scientific << this->clh << " latent heat exchange coefficient [no unit]\n";
+		  ss << "tstic     " << std::scientific << this->tstic << " Time step [unit: s]\n";
+		  ss << "tsticsub  " << std::scientific << this->tsticsub << " Sub-time step [unit: s]\n";
+		  ss << "\n";
+		  ss << "Parameters for slater albedo scheme\n";
+		  ss << "tmin      " << std::scientific << this->tmin << " Minimum temperature for which albedo decline becomes effective [unit: K]\n";
+		  ss << "tmax      " << std::scientific << this->tmax << " Maximum temperature for which albedo decline becomes effective [unit: K]\n";
+		  ss << "\n";
+        ss << "Parameters for isba albedo scheme\n";
+        ss << "tau_a     " << std::scientific << this->tau_a << " Dry-albedo decline for 'isba' albedo scheme [1 day-1]\n";
+		  ss << "\n";
+        ss << "Parameters for alex albedo scheme\n";
+        ss << "tmid      " << std::scientific << this->tmid << " parameter for 'alex' [unit: K]\n";
+        return ss.str();
+    }/*}}}*/
+    void Display(void){
+        cout << this->repr();
+    };
 }; /* }}} */
 
 class SemicConstants{ /* {{{ */
-public:
-	double cls=2.83e+6;  /* latent heat of sublimation [unit: J kg-1] */
-	double clm=3.3e+5;   /* latent heat of melting [unit: J kg-1] */
-	double clv=2.5e+6;   /* latent heat of condensation [unit: J kg-1] */
-	double cap=1e+3;  	/* specific heat capacity of air [unit: J kg-1 K-1]*/
+    public:
+        double cls=2.83e+6;  /* latent heat of sublimation [unit: J kg-1] */
+        double clm=3.3e+5;   /* latent heat of melting [unit: J kg-1] */
+        double clv=2.5e+6;   /* latent heat of condensation [unit: J kg-1] */
+        double cap=1e+3;  	/* specific heat capacity of air [unit: J kg-1 K-1]*/
 
-	double rhow=1e+3; 	/* density of water [kg m-3]*/
-	double hsmax=5; 	   /* maximum snow height [m] */
+        double rhow=1e+3; 	/* density of water [kg m-3]*/
+        double hsmax=5; 	   /* maximum snow height [m] */
 	
+    string repr() const{ /*{{{*/
+        std::ostringstream ss;
+        ss << "cls    " << std::scientific << this->cls  << " latent heat of sublimation (unit: J kg-1)\n"
+        ss << "clm    " << std::scientific << this->clm  << " latent heat of melting (unit: J kg-1)\n" 
+        ss << "clv    " << std::scientific << this->clv  << " latent heat of condensation (unit: J kg-1)\n";
+        ss << "cap    " << std::scientific << this->cap  << " specific heat capacity of air (unit: J kg-1 K-1)\n";
+        ss << "rhow   " << std::scientific << this->rhow << " density of water (unit: kg m-3)\n";
+        return ss.str();
+    };/*}}}*/
+
 	void Display(void){
-		cout << "cls    " << this->cls  << " latent heat of sublimation (unit: J kg-)" << endl;
-		cout << "clm    " << this->clm  << " latent heat of melting (unit: J kg-)" << endl;
-		cout << "clv    " << this->clv  << " latent heat of condensation (unit: J kg-)" << endl;
-		cout << "cap    " << this->cap  << " specific heat capacity of air (unit: J kg-1 K-1)" << endl;
-		cout << "rhow   " << this->rhow << " density of water (unit: kg m-3)" << endl;
+        cout << this->repr();
 	};
 }; /* }}}*/
 
@@ -132,20 +167,20 @@ class SemicForcings{ /* {{{ */
         }
 
 		void Initialize(int nx, int ntime){ /* {{{ */
-			this->nx = nx;
-			this->ntime = ntime;
+            this->nx = nx;
+            this->ntime = ntime;
 
-         this->sf  = new DoubleMatrix(nx, ntime);
-         this->rf  = new DoubleMatrix(nx, ntime);
-         this->t2m = new DoubleMatrix(nx, ntime);
-         this->sp  = new DoubleMatrix(nx, ntime);
+            this->sf  = new DoubleMatrix(nx, ntime);
+            this->rf  = new DoubleMatrix(nx, ntime);
+            this->t2m = new DoubleMatrix(nx, ntime);
+            this->sp  = new DoubleMatrix(nx, ntime);
 
-         this->lwd = new DoubleMatrix(nx, ntime);
-         this->swd = new DoubleMatrix(nx, ntime);
+            this->lwd = new DoubleMatrix(nx, ntime);
+            this->swd = new DoubleMatrix(nx, ntime);
 
-         this->wind = new DoubleMatrix(nx, ntime);
-         this->rhoa = new DoubleMatrix(nx, ntime);
-         this->qq   = new DoubleMatrix(nx, ntime);
+            this->wind = new DoubleMatrix(nx, ntime);
+            this->rhoa = new DoubleMatrix(nx, ntime);
+            this->qq   = new DoubleMatrix(nx, ntime);
 		}; /* }}} */
 }; /* }}} */
 

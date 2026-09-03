@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
+#include <sstream>
 
 #include <cassert>
 #include <limits>
@@ -70,7 +71,7 @@ class SEMIC{ /* {{{ */
 		DoubleVector wind;   /* Surface wind speed [m s-1] */
 		DoubleVector rhoa;   /* Air density [kg m-3] */
 		DoubleVector qq;     /* air specific humidity [kg kg-1] */
-		IntVector mask;      /* masking surface informatin (0: ocean, 1: land, 2: ice)*/
+		IntVector    mask;      /* masking surface informatin (0: ocean, 1: land, 2: ice)*/
 
 		/* auxilary variables */
 		DoubleVector lwup; /* upward longwave radiation [W m-2] */
@@ -90,9 +91,10 @@ class SEMIC{ /* {{{ */
 
 		void		Initialize(int nx);
 		void		InitializeParameters(void);
-		void		Display();
+		string      repr() const;
+		void		Display(void);
 		void		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const);
-		double   SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m);
+		double		SensibleHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double t2m);
 		void		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const);
 		void 		LatentHeatFlux(SemicParameters *Param, SemicConstants *Const, double rhoa, double wind, double tsurf, double sp, double qq, double &evap, double &subl, double &lhf);
 		double SaturateWaterVaporP(double temperature);

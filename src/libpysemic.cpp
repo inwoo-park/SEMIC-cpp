@@ -1,6 +1,7 @@
 #include "pybind11/pybind11.h"
 #include "pybind11/stl.h"
 #include "pybind11/numpy.h"
+#include "pybind11/iostream.h"
 
 #include "SemicParameters.h"
 // #include "SemicArray.h"
@@ -33,7 +34,9 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def_readwrite("tau_f",&SemicParameters::tau_f)
 	  .def_readwrite("w_crit",&SemicParameters::w_crit)
 	  .def_readwrite("mcrit",&SemicParameters::mcrit)
-	  .def_readwrite("tmid",&SemicParameters::tmid);
+	  .def_readwrite("tmid",&SemicParameters::tmid)
+	  .def("Display",&SemicParameters::Display)
+	  .def("__repr__",&SemicParameters::repr);
 	/* }}} */
 
 	py::class_<SemicConstants>(m, "Const") /*{{{*/
@@ -44,7 +47,8 @@ PYBIND11_MODULE(libpysemic, m){
 	  .def_readwrite("cap",&SemicConstants::cap)
 	  .def_readwrite("rhow",&SemicConstants::rhow)
 	  .def_readwrite("hsmax",&SemicConstants::hsmax)
-	  .def("Display",&SemicConstants::Display);
+	  .def("Display",&SemicConstants::Display)
+	  .def("__repr__",&SemicConstants::repr);
 	/*}}}*/
 
 	py::class_<SemicForcings>(m, "SemicForcings") /* {{{ */
@@ -121,6 +125,7 @@ PYBIND11_MODULE(libpysemic, m){
 		.def_readwrite("num_threads",&SEMIC::num_threads)
 		.def_readwrite("output_request", &SEMIC::output_request)
 		.def("Initialize",&SEMIC::Initialize)
+		.def("__repr__",&SEMIC::repr)
 		.def("Display",&SEMIC::Display)
 		.def("Albedo_Slater",&SEMIC::Albedo_Slater)
 		.def("Albedo_Denby",&SEMIC::Albedo_Denby)
@@ -130,15 +135,15 @@ PYBIND11_MODULE(libpysemic, m){
 		.def("RunEnergyBalance",&SEMIC::RunEnergyBalance)
 		.def("RunMassBalance",&SEMIC::RunMassBalance)
 		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(void))&SEMIC::RunEnergyAndMassBalance)
-      .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*, int))(&SEMIC::RunEnergyAndMassBalance))
-      .def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*))(&SEMIC::RunEnergyAndMassBalance))
-      .def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
-      .def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
-      // .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
-      .def("GetOpenmpVersion", (int (SEMIC::*)(void)) &SEMIC::GetOpenmpVersion)
+		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*, int))(&SEMIC::RunEnergyAndMassBalance),py::call_guard<py::scoped_ostream_redirect>())
+		.def("RunEnergyAndMassBalance", (void (SEMIC::*)(SemicForcings*))(&SEMIC::RunEnergyAndMassBalance),py::call_guard<py::scoped_ostream_redirect>())
+		.def("SetOpenmpThreads", (void (SEMIC::*)()) &SEMIC::SetOpenmpThreads)
+		.def("SetOpenmpThreads", (void (SEMIC::*)(int)) &SEMIC::SetOpenmpThreads)
+		// .def("SetOpenmpRuntime", (void (SEMIC::*)(int,int)) &SEMIC::SetOpenmpRuntime)
+		.def("GetOpenmpVersion", (int (SEMIC::*)(void)) &SEMIC::GetOpenmpVersion)
 		.def("GetOpenmpThreads", &SEMIC::GetOpenmpThreads)
-      // .def(py::init<int, int>());
-      .def(py::init<>());
+		// .def(py::init<int, int>());
+		.def(py::init<>());
 		/* }}} */
 
 	py::class_<DoubleMatrix>(m, "DoubleMatrix") /* {{{ */
